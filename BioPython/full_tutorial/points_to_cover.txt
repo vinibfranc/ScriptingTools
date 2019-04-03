@@ -1,9 +1,11 @@
+(DONE)
 Chapter 4  Sequence annotation objects
     4.1  The SeqRecord object
     4.2  Creating a SeqRecord
     4.3  Feature, location and position objects
     4.4  Comparison
 
+(DONE)
 Chapter 5  Sequence Input/Output
     5.1  Parsing or Reading Sequences
     5.2  Parsing sequences from compressed files
@@ -11,9 +13,11 @@ Chapter 5  Sequence Input/Output
     5.4  Sequence files as Dictionaries
     5.6  Low level FASTA and FASTQ parsers
 
+(DONE)
 Chapter 6  Multiple Sequence Alignment objects
     6.5  Pairwise sequence alignment
 
+(DONE)
 Chapter 7  BLAST
     7.1  Running BLAST over the Internet
     7.2  Running BLAST locally
@@ -25,6 +29,7 @@ Chapter 7  BLAST
     7.5  Dealing with PSI-BLAST
     7.6  Dealing with RPS-BLAST
 
+(TO-DO)
 Chapter 8  BLAST and other sequence search tools
     8.1  The SearchIO object model
         8.1.1  QueryResult
@@ -34,6 +39,7 @@ Chapter 8  BLAST and other sequence search tools
     8.2  A note about standards and conventions
     8.3  Reading search output files
 
+(LATER)
 Chapter 13  Phylogenetics with Bio.Phylo
     13.1  Demo: What’s in a Tree?
         13.1.1  Coloring branches within a tree
@@ -48,6 +54,7 @@ Chapter 13  Phylogenetics with Bio.Phylo
     13.6  PAML integration
     13.7  Future plans
 
+(TO-DO)
 Chapter 20  Cookbook – Cool things to do with it
     20.1  Working with sequence files
         20.1.1  Filtering a sequence file
