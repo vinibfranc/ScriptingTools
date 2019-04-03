@@ -1,0 +1,79 @@
+Chapter 4  Sequence annotation objects
+    4.1  The SeqRecord object
+    4.2  Creating a SeqRecord
+    4.3  Feature, location and position objects
+    4.4  Comparison
+
+Chapter 5  Sequence Input/Output
+    5.1  Parsing or Reading Sequences
+    5.2  Parsing sequences from compressed files
+    5.3  Parsing sequences from the net
+    5.4  Sequence files as Dictionaries
+    5.6  Low level FASTA and FASTQ parsers
+
+Chapter 6  Multiple Sequence Alignment objects
+    6.5  Pairwise sequence alignment
+
+Chapter 7  BLAST
+    7.1  Running BLAST over the Internet
+    7.2  Running BLAST locally
+        7.2.1  Introduction
+        7.2.2  Standalone NCBI BLAST+
+        7.2.3  Other versions of BLAST
+    7.3  Parsing BLAST output
+    7.4  The BLAST record class
+    7.5  Dealing with PSI-BLAST
+    7.6  Dealing with RPS-BLAST
+
+Chapter 8  BLAST and other sequence search tools
+    8.1  The SearchIO object model
+        8.1.1  QueryResult
+        8.1.2  Hit
+        8.1.3  HSP
+        8.1.4  HSPFragment
+    8.2  A note about standards and conventions
+    8.3  Reading search output files
+
+Chapter 13  Phylogenetics with Bio.Phylo
+    13.1  Demo: What’s in a Tree?
+        13.1.1  Coloring branches within a tree
+        13.2  I/O functions
+        13.3  View and export trees
+        13.4  Using Tree and Clade objects
+        13.4.1  Search and traversal methods
+        13.4.2  Information methods
+        13.4.3  Modification methods
+        13.4.4  Features of PhyloXML trees
+    13.5  Running external applications
+    13.6  PAML integration
+    13.7  Future plans
+
+Chapter 20  Cookbook – Cool things to do with it
+    20.1  Working with sequence files
+        20.1.1  Filtering a sequence file
+        20.1.2  Producing randomised genomes
+        20.1.3  Translating a FASTA file of CDS entries
+        20.1.4  Making the sequences in a FASTA file upper case
+        20.1.5  Sorting a sequence file
+        20.1.6  Simple quality filtering for FASTQ files
+        20.1.7  Trimming off primer sequences
+        20.1.8  Trimming off adaptor sequences
+        20.1.9  Converting FASTQ files
+        20.1.10  Converting FASTA and QUAL files into FASTQ files
+        20.1.11  Indexing a FASTQ file
+        20.1.12  Converting SFF files
+        20.1.13  Identifying open reading frames
+    20.2  Sequence parsing plus simple plots
+        20.2.1  Histogram of sequence lengths
+        20.2.2  Plot of sequence GC%
+        20.2.3  Nucleotide dot plots
+        20.2.4  Plotting the quality scores of sequencing read data
+    20.3  Dealing with alignments
+        20.3.1  Calculating summary information
+        20.3.2  Calculating a quick consensus sequence
+        20.3.3  Position Specific Score Matrices
+        20.3.4  Information Content
+    20.4  Substitution Matrices
+        20.4.1  Using common substitution matrices
+        20.4.2  Creating your own substitution matrix from an alignment
+    20.5  BioSQL – storing sequences in a relational database
