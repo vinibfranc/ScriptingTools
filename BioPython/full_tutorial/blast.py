@@ -49,7 +49,3 @@ from Bio.Blast.Applications import NcbiblastxCommandline
 #             print(hsp.query[0:75] + "...")
 #             print(hsp.match[0:75] + "...")
 #             print(hsp.sbjct[0:75] + "...")
-
-
-
-
