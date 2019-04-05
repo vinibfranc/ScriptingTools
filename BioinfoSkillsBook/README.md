@@ -630,10 +630,827 @@ $ sum Mus_musculus.GRCm38.74.gtf.gz
 $ shasum cf5bb5f8bda2803410bb04b708bff59cb575e379 Mus_musculus.GRCm38.74.gtf.gz
 ```
 
-## Chapter 7
-## Chapter 8
-## Chapter 9
-## Chapter 10
-## Chapter 11
-## Chapter 12
-## Chapter 13
+## Chapter 7 - Unix Data Tools
+
+In this chapter, we’ll see how we can combine the Unix shell with command-line data tools to explore and manipulate data quickly. Understanding how to use Unix data tools in bioinformatics isn’t only about learning what each tool does, it’s about mastering the practice of connecting tools together — creating programs from Unix pipelines. By connecting data tools together with pipes, we can construct programs that parse, manipulate, and summarize data.
+
+### When to Use the Unix Pipeline Approach and How to Use It Safely
+
+Many tasks in bioinformatics are of this nature: we want to get a quick answer and keep moving forward with our project. We could write a custom script, but for simple tasks this might be overkill and would take more time than necessary.
+
+For larger, more complex tasks it’s often preferable to write a custom script in a language like Python (or R if the work involves lots of data analysis). While shell approaches (whether a one-liner or a shell script) are useful, these don’t allow for the
+same level of flexibility in checking input data, structuring programs, use of data structures, code documentation, and adding assert statements and tests as languages like Python and R.
+
+### Inspecting and Manipulating Text Data with Unix Tools
+
+Tabular plain-text data formats are used extensively in computing. The basic format is incredibly simple: each row (also known as a record) is kept on its own line, and each column (also known as a field) is separated by some delimiter. There are three flavors you will encounter: tab-delimited, comma-separated and variable space-delimited.
+
+In this chapter, we’ll work with very simple genomic feature formats: BED (three-column) and GTF files. These file formats store the positions of features such as genes, exons, and variants in tab-delimited format.
+
+1. Inspecting Data with Head and Tail
+
+Taking a look at the top of a file:
+
+```
+$ head Mus_musculus.GRCm38.75_chr1.bed
+1 3054233 3054733
+1 3054233 3054733
+1 3054233 3054733
+1 3102016 3102125
+1 3102016 3102125
+1 3102016 3102125
+1 3205901 3671498
+1 3205901 3216344
+```
+
+We can also control how many lines we see with head through the -n argument:
+
+```
+$ tail -n 3 Mus_musculus.GRCm38.75_chr1.bed
+1 195240910 195241007
+1 195240910 195241007
+1 195240910 195241007
+```
+
+Sometimes it’s useful to see both the beginning and end of a file—for example, if we have a sorted BED file and we want to see the positions of the first feature and last feature.
+
+```
+$ (head -n 2; tail -n 2) < Mus_musculus.GRCm38.75_chr1.bed
+1 3054233 3054733
+1 3054233 3054733
+1 195240910 195241007
+1 195240910 195241007
+```
+
+We can also search for strings and get the first occurence with head:
+
+```
+$ grep 'gene_id "ENSMUSG00000025907"' Mus_musculus.GRCm38.75_chr1.gtf | head -n 1
+1 protein_coding gene 6206197 6276648 [...] gene_id "ENSMUSG00000025907" [...]
+```
+
+Under the hood, your shell sends a signal to other programs in the pipe called SIGPIPE—much like the signal that’s sent when you press Control-c (that signal is SIGINT). When building complex pipelines
+that process large amounts of data, this is extremely important. It means that in a pipeline like:
+
+```
+$ grep "some_string" huge_file.txt | program1 | program2 | head -n 5
+```
+
+#### less
+
+less is also a useful program for a inspecting files and the output of pipes. less is a terminal pager, a program that allows us to view large amounts of text in our terminals.
+
+less runs more like an application than a command: once we start less, it will stay open until we quit it. Let’s review an example—in this chapter’s directory in the book’s GitHub repository, there’s a file called contaminated.fastq. Let’s look at this with less:
+
+```
+$ less contaminated.fastq
+```
+
+less is also crucial when iteratively building up a pipeline—which is the best way to construct pipelines. Suppose we have an imaginary pipeline that involves three programs, step1, step2, and step3. Our finished pipeline will look like ```step1 input.txt | step2 | step3 > output.txt```. However, we want to build this up in pieces, running step1 input.txt first and checking its output, then adding in step3 and checking that output, and so forth. The natural way to do this is with less:
+
+```
+$ step1 input.txt | less # inspect output in less
+$ step1 input.txt | step2 | less
+$ step1 input.txt | step2 | step3 | less
+```
+
+### Plain-Text Data Summary Information with wc, ls, and awk
+
+In addition to peeking at a file with head, tail, or less, we may want other bits of summary information about a plain-text data file like the number of rows or columns. With plain-text data formats like tab-delimited and CSV files, the number of rows is usually the number of lines. We can retrieve this with the program wc (for word count):
+
+```
+$ wc Mus_musculus.GRCm38.75_chr1.bed
+81226 243678 1698545 Mus_musculus.GRCm38.75_chr1.bed
+```
+
+By default, wc outputs the number of words, lines, and characters of the supplied file. It can also work with many files:
+
+```
+$ wc Mus_musculus.GRCm38.75_chr1.bed Mus_musculus.GRCm38.75_chr1.gtf
+81226 243678 1698545 Mus_musculus.GRCm38.75_chr1.bed
+81231 2385570 26607149 Mus_musculus.GRCm38.75_chr1.gtf
+162457 2629248 28305694 total
+```
+
+Often, we only care about the number of lines. We can use option -l to just return the number of lines:
+
+```
+$ wc -l Mus_musculus.GRCm38.75_chr1.bed
+81226 Mus_musculus.GRCm38.75_chr1.bed
+```
+
+You might have noticed a discrepancy between the BED file and the GTF file for this chromosome 1 mouse annotation. To inspect this, we can use head:
+
+```
+$ head -n 5 Mus_musculus.GRCm38.75_chr1.gtf
+```
+
+Another bit of information we usually want about a file is its size. The easiest way to do this is with our old Unix friend, ls, with the -l option:
+
+```
+$ ls -l Mus_musculus.GRCm38.75_chr1.bed
+-rw-r--r-- 1 vinceb staff 1698545 Jul 14 22:40 Mus_musculus.GRCm38.75_chr1.bed
+```
+
+There’s one other bit of information we often want about a file: how many columns it contains. Let’s use an awk one-liner to return how many fields a file contains:
+
+```
+$ awk -F "\t" '{print NF; exit}' Mus_musculus.GRCm38.75_chr1.bed
+3
+```
+
+awk was designed for tabular plain-text data processing, and consequently has a built-in variable NF set to the number of fields of the current dataset. This simple awk one-liner simply prints the number of fields of the first row of the Mus_musculus.GRCm38.75_chr1.bed file, and then exits.
+
+To see how many columns of data there are, we need to first chop off the comments and then pass the results to our awk one-liner. One way to do this is with a tail trick we saw earlier:
+
+```
+$ tail -n +5 Mus_musculus.GRCm38.75_chr1.gtf | head -n 1
+#!genebuild-last-updated 2013-09
+$ tail -n +6 Mus_musculus.GRCm38.75_chr1.gtf | head
+1 pseudogene gene 3054233 3054733 . + . [...]
+$ tail -n +6 Mus_musculus.GRCm38.75_chr1.gtf | awk -F "\t" '{print NF; exit}'
+16
+```
+
+Otherwise, using the program grep (which we’ll talk more about in, we can easily exclude lines that begin with “#”:
+
+```
+$ grep -v "^#" Mus_musculus.GRCm38.75_chr1.gtf | head -n 3
+1 pseudogene gene 3054233 3054733 . + . [...]
+1 unprocessed_pseudogene transcript 3054233 3054733 . + . [...]
+1 unprocessed_pseudogene exon 3054233 3054733 . + . [...]
+```
+
+### Working with Column Data with cut and Columns
+
+When working with plain-text tabular data formats like tab-delimited and CSV files, we often need to extract specific columns from the original file or stream. For example, suppose we wanted to extract only the start positions (the second column) of the
+Mus_musculus.GRCm38.75_chr1.bed file. The simplest way to do this is with cut.
+
+```
+$ cut -f 2 Mus_musculus.GRCm38.75_chr1.bed | head -n 3
+3054233
+3054233
+3054233
+```
+
+Using cut, we can convert our GTF for Mus_musculus.GRCm38.75_chr1.gtf to a three-column tab-delimited file of genomic ranges (e.g., chromosome, start, and end position). We’ll chop off the metadata rows using the grep command covered earlier, and then use cut to extract the first, fourth, and fifth columns (chromosome, start, end):
+
+```
+$ grep -v "^#" Mus_musculus.GRCm38.75_chr1.gtf | cut -f1,4,5 | head -n 3
+1 3054233 3054733
+1 3054233 3054733
+1 3054233 3054733
+$ grep -v "^#" Mus_musculus.GRCm38.75_chr1.gtf | cut -f1,4,5 > test.txt
+```
+
+cut also allows us to specify the column delimiter character. So, if we were to come across a CSV file containing chromosome names, start positions, and end positions, we could select columns from it, too:
+
+```
+$ head -n 3 Mus_musculus.GRCm38.75_chr1_bed.csv
+1,3054233,3054733
+1,3054233,3054733
+1,3054233,3054733
+$ cut -d, -f2,3 Mus_musculus.GRCm38.75_chr1_bed.csv | head -n 3
+3054233,3054733
+3054233,3054733
+3054233,3054733
+```
+
+### Formatting Tabular Data with column
+
+As you may have noticed when working with tab-delimited files, it’s not always easy to see which elements belong to a particular column. For example:
+
+```
+$ grep -v "^#" Mus_musculus.GRCm38.75_chr1.gtf | cut -f1-8 | head -n3
+1 pseudogene gene 3054233 3054733 . + .
+1 unprocessed_pseudogene transcript 3054233 3054733 . + .
+1 unprocessed_pseudogene exon 3054233 3054733 . + .
+```
+
+column -t produces neat columns that are much easier to read:
+
+```
+$ grep -v "^#" Mus_musculus.GRCm38.75_chr1.gtf | cut -f 1-8 | column -t
+| head -n 3
+1 pseudogene gene 3054233 3054733 . + .
+1 unprocessed_pseudogene transcript 3054233 3054733 . + .
+1 unprocessed_pseudogene exon 3054233 3054733 . + .
+```
+
+In general, it’s easier to make computer-readable data attractive to humans than it is to make data in a human-friendly format readable to a computer. Unfortunately, data in formats that prioritize human readability over computer readability still linger in
+bioinformatics.
+
+### The All-Powerful Grep
+
+grep is one of the most powerful Unix data tools. First, it’s important to mention grep is fast. Really fast. If you need to find a pattern (fixed string or regular expression) in a file, grep will be faster than anything you could write in Python. This demonstrates a point: if computational speed is our foremost priority (and there are many cases when it isn’t as important as we think), Unix tools tuned to do certain tasks really often are the fastest implementation.
+
+grep requires two arguments: the pattern (the string or basic regular expression you want to search for), and the file (or files) to search for it in. For example, if we want to find a gene in a file, we can do the following:
+
+```
+$ grep "Olfr418-ps1" Mus_musculus.GRCm38.75_chr1_genes.txt
+ENSMUSG00000049605 Olfr418-ps1
+```
+
+One useful option when using grep is --color=auto. This option enables terminal colors, so the matching part of the pattern is colored in your terminal.
+
+For example, suppose you wanted a list of all
+genes that contain “Olfr,” except “Olfr1413.” Using -v and chaining together to calls to
+grep with pipes, we could use:
+
+```
+$ grep Olfr Mus_musculus.GRCm38.75_chr1_genes.txt | grep -v Olfr1413
+```
+
+But this command would also exclude genes like
+“Olfr1413a” and “Olfr14130.” “Olfr14130.” But we can get around this by using -w, which matches entire words (surrounded by whitespace). Let’s look at how this works with a simpler toy example:
+
+```
+$ cat example.txt
+bio
+bioinfo
+bioinformatics
+computational biology
+$ grep -v bioinfo example.txt
+bio
+computational biology
+$ grep -v -w bioinfo example.txt
+bio
+bioinformatics
+computational biology
+```
+
+grep’s default output often doesn’t give us enough context of a match when we need to inspect results by eye; only the matching line is printed to standard output. There are three useful options to get around this context before (-B), context: after (-A), and context before and after (-C). Each of these arguments takes how many lines of context to provide:
+
+```
+$ grep -B1 "AGATCGG" contam.fastq | head -n 6
+@DJB775P1:248:D0MDGACXX:7:1202:12362:49613
+TGCTTACTCTGCGTTGATACCACTGCTTAGATCGGAAGAGCACACGTCTGAA
+--
+@DJB775P1:248:D0MDGACXX:7:1202:12782:49716
+CTCTGCGTTGATACCACTGCTTACTCTGCGTTGATACCACTGCTTAGATCGG
+--
+$ grep -A2 "AGATCGG" contam.fastq | head -n 6
+TGCTTACTCTGCGTTGATACCACTGCTTAGATCGGAAGAGCACACGTCTGAA
++
+JJJJJIIJJJJJJHIHHHGHFFFFFFCEEEEEDBD?DDDDDDBDDDABDDCA
+--
+CTCTGCGTTGATACCACTGCTTACTCTGCGTTGATACCACTGCTTAGATCGG
++
+```
+
+For example, if we wanted to find the Ensembl gene identifiers for both “Olfr1413” and “Olfr1411,” we
+could use:
+
+```
+$ grep "Olfr141[13]" Mus_musculus.GRCm38.75_chr1_genes.txt
+ENSMUSG00000058904 Olfr1413
+ENSMUSG00000062497 Olfr1411
+```
+
+grep has an option to count how many lines match a pattern: -c. For example, suppose we wanted a quick look at how many genes start with “Olfr”:
+
+```
+$ grep -c "\tOlfr" Mus_musculus.GRCm38.75_chr1_genes.txt
+27
+```
+
+For example, suppose we wanted to know how many small nuclear RNAs are in our Mus_musculus.GRCm38.75_chr1.gtf file.
+
+```
+$ grep -c 'gene_biotype "snRNA"' Mus_musculus.GRCm38.75_chr1.gtf
+315
+```
+
+Suppose we wanted to extract all values of the “gene_id” field from the last column of our Mus_musculus.GRCm38.75_chr1.gtf file. This is easy with -o:
+
+```
+$ grep -E -o 'gene_id "\w+"' Mus_musculus.GRCm38.75_chr1.gtf | head -n 5
+gene_id "ENSMUSG00000090025"
+gene_id "ENSMUSG00000090025"
+gene_id "ENSMUSG00000090025"
+gene_id "ENSMUSG00000064842"
+gene_id "ENSMUSG00000064842"
+```
+
+#### Cleaning a set of gene names with Unix data tools
+```
+grep -E -o 'gene_id "(\w+)"' Mus_musculus.GRCm38.75_chr1.gtf | \
+cut -f2 -d" " | \
+sed 's/"//g' | \
+sort | \
+uniq > mm_gene_id.txt
+```
+
+### Sorting Plain-Text Data with Sort
+
+Very often we need to work with sorted plain-text data in bioinformatics. First, like cut, sort is designed to work with plain-text data with columns. Running sort without any arguments simply sorts a file alphanumerically by line:
+
+```
+$ cat example.bed
+$ sort example.bed
+```
+
+However, using sort’s defaults of sorting alphanumerically by line doesn’t handle tabular data properly. So we need to sort by particular columns and to tell sort that certain columns are numeric values.
+
+sort has a simple syntax to do this. Let’s look at how we’d sort example.bed by chromosome (first column), and start position (second column):
+
+```
+sort -k1,1 -k2,2n example.bed
+chr1 9 28
+chr1 10 19
+chr1 26 39
+chr1 32 47
+chr1 40 49
+chr2 35 54
+chr3 11 28
+chr3 16 27
+```
+
+We could then redirect the standard output stream of sort to a file:
+
+```
+$ sort -k1,1 -k2,2n example.bed > example_sorted.bed
+```
+
+Another example: 
+
+```
+$ sort -k1,1 -k4,4n Mus_musculus.GRCm38.75_chr1_random.gtf > \
+Mus_musculus.GRCm38.75_chr1_sorted.gtf
+```
+
+We can check if a file is sorted according to our -k arguments using -c:
+
+```
+$ sort -k1,1 -k2,2n -c example_sorted.bed
+$ echo $?
+0
+$ sort -k1,1 -k2,2n -c example.bed
+sort: example.bed:4: disorder: chr1 40 49
+$ echo $?
+1
+```
+
+It’s also possible to sort in reverse order with the -r argument:
+
+```
+$ sort -k1,1 -k2,2n -r example.bed
+chr3 11 28
+chr3 16 27
+chr2 35 54
+chr1 9 28
+chr1 10 19
+chr1 26 39
+chr1 32 47
+chr1 40 49
+```
+
+If you’d like to only reverse the sorting order of a single column, you can append r on that column’s -k argument:
+
+```
+$ sort -k1,1 -k2,2nr example.bed
+chr1 40 49
+chr1 32 47
+chr1 26 39
+chr1 10 19
+chr1 9 28
+chr2 35 54
+chr3 16 27
+chr3 11 28
+```
+
+There are a few other useful sorting options to discuss, but these are available for GNU sort only (not the BSD version as found on OS X). The first is -V, which is a clever alphanumeric sorting routine that understands numbers inside strings.
+
+```
+$ sort -k1,1V -k2,2n example2.bed
+chr1 34 49
+chr10 30 42
+chr10 31 47
+chr11 6 16
+chr2 15 19
+chr2 17 22
+chr2 27 46
+chr22 32 46
+```
+
+Another option (only available in GNU sort) is to run sort with the --parallel option. For example, to use four cores to sort Mus_musculus.GRCm38.75_chr1_random.gtf:
+
+```
+$ sort -k1,1 -k4,4n --parallel 4 Mus_musculus.GRCm38.75_chr1_random.gtf
+```
+
+### Finding Unique Values in Uniq
+
+Unix’s uniq takes lines from a file or standard input stream, and outputs all lines with consecutive duplicates removed.
+
+Let’s first see an example of its behavior:
+
+```
+$ cat letters.txt
+A
+A
+B
+C
+B
+C
+C
+C
+$ uniq letters.txt
+A
+B
+C
+B
+C
+```
+
+As you can see, uniq does not return the unique values letters.txt—it only removes consecutive duplicate lines (keeping one). If instead we did want to find all unique lines in a file, we would first sort all lines using sort so that all identical lines are grouped next to each other, and then run uniq. For example:
+
+```
+$ sort letters.txt | uniq
+A
+B
+C
+```
+
+uniq also has a tremendously useful option that’s used very often in command-line data processing: -c. This option shows the counts of occurrences next to the unique lines. For example:
+
+```
+$ uniq -c letters.txt
+2 A
+1 B
+1 C
+1 B
+3 C
+$ sort letters.txt | uniq -c
+2 A
+2 B
+4 C
+```
+
+Both sort | uniq and sort | uniq -c are frequently used shell idioms in bioinformatics and worth memorizing. Combined with other Unix tools like grep and cut, sort and uniq can be used to summarize columns of tabular data:
+
+```
+$ grep -v "^#" Mus_musculus.GRCm38.75_chr1.gtf | cut -f3 | sort | uniq -c
+25901 CDS
+7588 UTR
+36128 exon
+2027 gene
+2290 start_codon
+2299 stop_codon
+4993 transcript
+```
+
+If we wanted these counts in order from most frequent to least, we could pipe these results to sort -rn:
+
+```
+$ grep -v "^#" Mus_musculus.GRCm38.75_chr1.gtf | cut -f3 | sort | uniq -c | \
+sort -rn
+36128 exon
+25901 CDS
+7588 UTR
+4993 transcript
+2299 stop_codon
+2290 start_codon
+2027 gene
+```
+
+If you want to see the number of features belonging to a particular gene identifier:
+
+```
+$ grep "ENSMUSG00000033793" Mus_musculus.GRCm38.75_chr1.gtf | cut -f3 | sort \
+| uniq -c
+13 CDS
+3 UTR
+14 exon
+1 gene
+1 start_codon
+1 stop_codon
+1 transcript
+```
+
+uniq can also be used to check for duplicates with the -d option. With the -d option, uniq outputs duplicated lines only.
+
+```
+$ uniq -d mm_gene_names.txt
+# no output
+$ uniq -d mm_gene_names.txt | wc -l
+0
+```
+
+A file with duplicates, like the test.bed file, has multiple lines returned:
+
+```
+$ uniq -d test.bed | wc -l
+22925
+```
+
+### Join
+
+The Unix tool join is used to join different files together by a common column. This is easiest to understand with simple test data. Let’s use our example.bed BED file, and example_lengths.txt, a file containing the same chromosomes as example.bed with their lengths. Both files look like this:
+
+```
+$ cat example.bed
+chr1 26 39
+chr1 32 47
+chr3 11 28
+chr1 40 49
+chr3 16 27
+chr1 9 28
+chr2 35 54
+chr1 10 19
+$ cat example_lengths.txt
+chr1 58352
+chr2 39521
+chr3 24859
+```
+
+Our goal is to append the chromosome length alongside each feature (note that the result will not be a valid BED-formatted file, just a tab-delimited file).
+
+To append the chromosome lengths to example.bed, we first need to sort both files by the column to be joined on.
+
+```
+$ sort -k1,1 example.bed > example_sorted.bed
+$ sort -c -k1,1 example_lengths.txt # verifies is already sorted
+```
+
+Then, to sort them, we can use:
+
+```
+$ join -1 1 -2 1 example_sorted.bed example_lengths.txt > example_with_lengths.txt
+$ cat example_with_lengths.txt
+chr1 10 19 58352
+chr1 26 39 58352
+chr1 32 47 58352
+chr1 40 49 58352
+chr1 9 28 58352
+chr2 35 54 39521
+chr3 11 28 24859
+chr3 16 27 24859
+```
+
+But look what happens if our second file, example_lengths.txt, is truncated such
+that it doesn’t have the lengths for chr3:
+
+```$ head -n2 example_lengths.txt > example_lengths_alt.txt # truncate file
+$ join -1 1 -2 1 example_sorted.bed example_lengths_alt.txt
+chr1 10 19 58352
+chr1 26 39 58352
+chr1 32 47 58352
+chr1 40 49 58352
+chr1 9 28 58352
+chr2 35 54 39521
+$ join -1 1 -2 1 example_sorted.bed example_lengths_alt.txt | wc -l
+6
+```
+
+GNU join implements the -a option to include unpairable lines—ones that do not have an entry in either file.
+
+```
+$ join -1 1 -2 1 -a 1 example_sorted.bed example_lengths_alt.txt # GNU join only
+chr1 10 19 58352
+chr1 26 39 58352
+chr1 32 47 58352
+chr1 40 49 58352
+chr1 9 28 58352
+chr2 35 54 39521
+chr3 11 28
+chr3 16 27
+```
+
+### Text Processing with Awk
+
+We’ll introduce the basics of Awk in this section—enough to get you started with using Awk in bioinformatics.
+
+First, Awk processes input data a record at a time. Each record is composed of fields, separate chunks that Awk automatically separates. Because Awk was designed to work with tabular data, each record is a line, and each field is a column’s entry for that record.
+
+First, we can simply mimic cat by omitting a pattern and printing an entire record with the variable $0:
+
+```
+$ awk '{ print $0 }' example.bed
+chr1 26 39
+chr1 32 47
+chr3 11 28
+chr1 40 49
+chr3 16 27
+chr1 9 28
+chr2 35 54
+chr1 10 19
+```
+
+Awk supports arithmetic with the standard operators +, -, *, /, % (remainder), and ^ (exponentiation). We can subtract within a pattern to calculate the length of a feature, and filter on that expression:
+
+```
+$ awk '$3 - $2 > 18' example.bed
+chr1 9 28
+chr2 35 54
+```
+
+We can also chain patterns, by using logical operators && (AND), || (OR), and ! (NOT). For example, if we wanted all lines on chromosome 1 with a length greater than 10:
+
+```
+$ awk '$1 ~ /chr1/ && $3 - $2 > 10' example.bed
+chr1 26 39
+chr1 32 47
+chr1 9 28
+```
+
+We would have to take the sum feature lengths, and then divide by the total number of records. We can do this with:
+
+```
+$ awk 'BEGIN{ s = 0 }; { s += ($3-$2) }; END{ print "mean: " s/NR };' example.bed
+mean: 14
+```
+
+We can use NR to extract ranges of lines, too; for example, if we wanted to extract all lines between 3 and 5 (inclusive):
+
+```
+$ awk 'NR >= 3 && NR <= 5' example.bed
+chr3 11 28
+chr1 40 49
+chr3 16 27
+```
+We could generate a three-column BED file from Mus_musculus.GRCm38.75_chr1.gtf as follows:
+
+```
+$ awk '!/^#/ { print $1 "\t" $4-1 "\t" $5 }' Mus_musculus.GRCm38.75_chr1.gtf | \
+head -n 3
+1 3054232 3054733
+1 3054232 3054733
+1 3054232 3054733
+```
+
+Awk also has a very useful data structure known as an associative array. Associative arrays behave like Python’s dictionaries or hashes in other languages. We can create an associative array by simply assigning a value to a key. For example, suppose we
+wanted to count the number of features (third column belonging to the gene “Lypla1.” We could do this by incrementing their values in an associative array:
+
+```
+$ awk '/Lypla1/ { feature[$3] += 1 }; \
+END { for (k in feature) \
+print k "\t" feature[k] }' Mus_musculus.GRCm38.75_chr1.gtf
+```
+
+It’s worth noting that there’s an entirely Unix way to count features of a particular gene: grep, cut, sort, and uniq -c:
+
+```
+$ grep "Lypla1" Mus_musculus.GRCm38.75_chr1.gtf | cut -f 3 | sort | uniq -c
+56 CDS
+24 UTR
+69 exon
+1 gene
+5 start_codon
+5 stop_codon
+9 transcript
+```
+
+### Bioawk: An Awk for Biological Formats
+
+Imagine extending Awk’s powerful processing of tabular data to processing tasks involving common bioinformatics formats like FASTA/FASTQ, GTF/GFF, BED, SAM, and VCF. Let’s look at Bioawk’s supported
+input formats and what variables these formats set:
+
+To install bioawk on Ubuntu we can follow this commands: https://silico-sciences.com/2015/12/install-bioawk-on-ubuntu/
+
+```
+$ bioawk -c help
+```
+
+Bioawk is also quite useful for processing FASTA/FASTQ files. For example, we could use it to turn a FASTQ file into a FASTA file:
+
+```
+$ bioawk -c fastx '{print ">"$name"\n"$seq}' contam.fastq | head -n 4
+>DJB775P1:248:D0MDGACXX:7:1202:12362:49613
+TGCTTACTCTGCGTTGATACCACTGCTTAGATCGGAAGAGCACACGTCTGAA
+>DJB775P1:248:D0MDGACXX:7:1202:12782:49716
+CTCTGCGTTGATACCACTGCTTACTCTGCGTTGATACCACTGCTTAGATCGG
+```
+
+Bioawk can also serve as a method of counting the number of FASTQ/FASTA entries:
+
+```
+$ bioawk -c fastx 'END{print NR}' contam.fastq
+8
+```
+
+Bioawk is also useful for creating a table of sequence lengths from a FASTA file. For example, to create a table of all chromosome lengths of the Mus musculus genome:
+
+```
+$ bioawk -c fastx '{print $name,length($seq)}' \
+Mus_musculus.GRCm38.75.dna_rm.toplevel.fa.gz > mm_genome.txt
+$ head -n 4 mm_genome.txt
+1 195471971
+10 130694993
+11 122082543
+12 120129022
+13 120421639
+14 124902244
+```
+
+If we wanted to return all variants for which individuals ind_A and ind_B have identical genotypes (note that this assumes a fixed allele order like ref/alt or major/minor):
+
+```
+$ bioawk -c hdr '$ind_A == $ind_B {print $id}' genotypes.txt
+S_001
+S_003
+S_005
+S_008
+S_009
+```
+
+### Advanced Shell Tricks
+
+Now we’re ready to dig into a few more advanced shell tricks.
+
+#### Subshells
+
+The first trick we’ll cover is using Unix subshells. Before explaining this trick, it’s helpful to remember the difference between sequential commands (connected with && or ;), and piped commands (connected with |). Sequential commands are simply run one after the other; the previous command’s standard output does not get passed to the next program’s standard in. In contrast, connecting two programs with pipes means the first program’s standard out will be piped into the next program’s
+standard in. If we use command1 && command2, command2 will only run if command1 completed with a zero-exit status.
+
+Subshells allow us to execute sequential com‐
+mands together in a separate shell process. This is useful primarily to group sequential commands together (such that their output is a single stream. This gives us a new way to construct clever one-liners and has practical uses in command-line data processing. Let’s look at a toy example first:
+
+```
+$ echo "this command"; echo "that command" | sed 's/command/step/'
+this command
+that step
+$ (echo "this command"; echo "that command") | sed 's/command/step/'
+this step
+that step
+```
+
+Consider the problem of sorting a GTF file with a metadata header. We can’t simply sort the entire file with sort, because this header could get shuffled in with rows of data. Instead, we want to sort everything except the header, but still include the header at the top of the final sorted file. We can solve this problem using a subshell to group sequential commands that print the header to standard out and sort all other lines by chromosome and start position, printing all lines to standard out after the header.
+
+```
+$ (zgrep "^#" Mus_musculus.GRCm38.75_chr1.gtf.gz; \
+zgrep -v "^#" Mus_musculus.GRCm38.75_chr1.gtf.gz | \
+sort -k1,1 -k4,4n) | less
+```
+
+Because we’ve used a subshell, all standard output from these sequential commands will be combined into a single stream, which here is piped to less. To write this stream to a file, we could redirect this stream to a file using something like > 
+Mus_musculus.GRCm38.75_chr1_sorted.gtf. But a better approach would be to use gzip to compress this stream before writing it to disk:
+
+```
+$ (zgrep "^#" Mus_musculus.GRCm38.75_chr1.gtf.gz; \
+zgrep -v "^#" Mus_musculus.GRCm38.75_chr1.gtf.gz | \
+sort -k1,1 -k4,4n) | gzip > Mus_musculus.GRCm38.75_chr1_sorted.gtf.gz
+```
+
+### Named Pipes and Process Substitution
+
+Throughout this chapter, we’ve used pipes to connect command-line tools to build custom data-processing pipelines. However, some programs won’t interface with the Unix pipes we’ve come to love and depend on. For example, certain bioinformatics tools read in multiple input files and write to multiple output files:
+
+```
+$ processing_tool --in1 in1.fq --in2 in2.fq --out1 out2.fq --out2.fq
+```
+
+In this case, the imaginary program processing_tool requires two separate input files, and produces two separate output files. Because each file needs to be provided separately, we can’t pipe the previous processing step’s results through processing_tool’s standard in.
+
+A named pipe, also known as a FIFO (First In First Out, a concept in computer science), is a special sort of file. Regular pipes are anonymous—they don’t have a name, and only persist while both processes are running. Named pipes behave like files, and are persistent on your filesystem. We can create a named pipe with the program mkfifo:
+
+```
+$ mkfifo fqin
+$ ls -l fqin
+prw-r--r-- 1 vinceb staff 0 Aug 5 22:50 fqin
+```
+
+As a toy example, we can simulate this by using echo to redirect some text into a named pipe (running it in the background, so we can have our prompt back), and then cat to read the data back out:
+
+```
+$ echo "hello, named pipes" > fqin &
+[1] 16430
+$ cat fqin
+[1] + 16430 done
+hello, named pipes
+$ rm fqin
+```
+
+Although the syntax is similar to shell redirection to a file, we’re not actually writing anything to our disk. Named pipes provide all of the computational benefits of pipes with the flexibility of interfacing with files.
+
+However, creating and removing these file-like named pipes is a bit tedious. Programmers like syntactic shortcuts, so there’s a way to use named pipes without having to explicitly create them. This is called process substitution, or sometimes known as
+anonymous named pipes. These allow you to invoke a process, and have its standard output go directly to a named pipe.
+
+If we were to re-create the previous toy example with process substitution, it would look as follows:
+
+```
+$ cat <(echo "hello, process substitution")
+hello, process substitution
+```
+
+Order to follow: chapter 1, 2, 3, 6, 7, 9, 10, 11, 12, 8.
+
+## Chapter 8 - A Rapid Introduction to the R Language
+
+(175 to 261)
+
+## Chapter 9 - Working with Range Data
+
+(263 to 337)
+
+## Chapter 10 - Working with Sequence Data
+
+(339 to 354)
+
+## Chapter 11 - Working with Alignment Data
+
+(355 to 394)
+
+## Chapter 12 - Bioinformatics Shell Scripting, Writing Pipelines, and Parallelizing Tasks
+
+(395 to 423)
