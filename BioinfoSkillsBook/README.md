@@ -409,7 +409,227 @@ alias today="date +%F"
 mkdir results-$(today)
 ```
 
-## Chapter 6
+## Chapter 6 - Bioinformatics Data
+
+Data is a requisite of any bioinformatics project. We further our understanding of complex biological systems by refining a large amount of data to a point where we can extract meaning from it. Unfortunately, many tasks that are simple with small or medium-sized datasets are a challenge with the large and complex datasets common in genomics. These challenges include:
+
+- Retrieving data: Whether downloading large sequencing datasets or accessing a web application
+hundreds of times to download specific files, retrieving data in bioinformatics can require special tools and skills.
+
+- Ensuring data integrity: Transferring large datasets across networks creates more opportunities for data corruption, which can later lead to incorrect analyses. Consequently, we need to ensure data integrity with tools before continuing with analysis.
+
+- Compression: The data we work with in bioinformatics is large enough that it often needs to be compressed. Consequently, working with compressed data is an essential skill in bioinformatics.
+
+### Retrieving Bioinformatics Data
+
+Suppose you’ve just been told the sequencing for your project has been completed: you have six lanes of Illumina data to download from your sequencing center. Downloading this amount of data through your web browser is not feasible: web browsers are not designed to download such large datasets. Additionally, you’d need to download this sequencing data to your server, not the local workstation where you browse the Internet.
+
+1. Downloading Data with wget and curl
+
+Two common command-line programs for downloading data from the Web are wget and curl.
+
+#### wget
+
+wget is useful for quickly downloading a file from the command line—for example, human chromosome 22 from the GRCh37 (also known as hg19) assembly version:
+
+```
+$ wget http://hgdownload.soe.ucsc.edu/goldenPath/hg19/chromosomes/chr22.fa.gz
+--2013-06-30 00:15:45-- http://[...]/goldenPath/hg19/chromosomes/chr22.fa.gz
+Resolving hgdownload.soe.ucsc.edu... 128.114.119.163
+Connecting to hgdownload.soe.ucsc.edu|128.114.119.163|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 11327826 (11M) [application/x-gzip]
+Saving to: ‘chr22.fa.gz’
+
+17% [======> ] 1,989,172 234KB/s eta 66s
+```
+
+wget can handle both http and ftp links. One of wget’s strengths is that it can download data recursively. When run with the recursive option (--recursive or -r), wget will also follow and download the pages linked to, and even follow and download links on these pages, and so forth. An exemple is provided below:
+
+```
+$ wget --accept "*.gtf" --no-directories --recursive --no-parent http://genomics.someuniversity.edu/labsite/annotation.html
+```
+
+#### curl
+
+curl serves a slightly different purpose than wget. wget is great for downloading files via HTTP or FTP and scraping data from a web page using its recursive option. curl behaves similarly, although by default writes the file to standard output. To download
+chromosome 22 as we did with wget, we’d use:
+
+```
+$ curl http://hgdownload.soe.ucsc.edu/goldenPath/hg19/chromosomes/chr22.fa.gz > chr22.fa.gz
+```
+
+curl has the advantage that it can transfer files using more protocols than wget, including SFTP (secure FTP) and SCP (secure copy). Curl itself is also a library, meaning in addition to the command-line curl program, Curl’s functionality is wrapped by software libraries like RCurl and pycurl.
+
+### Rsync and Secure Copy (scp)
+
+wget and curl are appropriate for quickly downloading files from the command line, but are not optimal for some heavier-duty tasks. For example, suppose a colleague needs all large sequencing datasets in your project directory that are ignored by Git. A better tool for synchronizing these entire directories across a network is Rsync.
+
+Rsync is a superior option for these types of tasks for a few reasons. First, Rsync is often faster because it only sends the difference between file versions (when a copy already exists or partially exists) and it can compress files during transfers. Second, Rsync has an archive option that preserves links, modification timestamps, permissions, ownership, and other file attributes. This makes Rsync an excellent choice for network backups of entire directories. Rsync also has numerous features and options to handle different backup scenarios, such as what to do if a file exists on the remote host.
+
+rsync’s basic syntax is rsync source destination, where source is the source of the files or directories you’d like to copy, and destination is the destination you’d like to copy these files to. Either source or destination can be a remote host specified in the format user@host:/path/to/directory/.
+
+Let’s look at an example of how we can use rsync to copy over an entire directory to another machine. 
+
+```
+$ rsync -avz -e ssh zea_mays/data/ vinceb@[...]:/home/deborah/zea_mays/data
+building file list ... done
+zmaysA_R1.fastq
+zmaysA_R2.fastq
+zmaysB_R1.fastq
+zmaysB_R2.fastq
+zmaysC_R1.fastq
+zmaysC_R2.fastq
+sent 2861400 bytes received 42 bytes 107978.94 bytes/sec
+total size is 8806085 speedup is 3.08
+```
+
+Occasionally, we just need to quickly copy a single file over SSH—for tasks where Unix’s cp would be sufficient, but needs to work over an SSH connection. rsync would work, but it’s a bit overkill. Secure copy (scp) is perfect for this purpose. Secure
+copy works just like cp, except we need to specify both host and path (using the same user@host:/path/to/file notation as wget). For example, we could transfer a single GTF file to 192.168.237.42:/home/deborah/zea_mays/data/ using:
+
+```
+$ scp Zea_mays.AGPv3.20.gtf \ 192.168.237.42:/home/deborah/zea_mays/data/
+```
+
+### Data Integrity
+
+Data we download into our project directory is the starting point of all future analyses and conclusions. Although it may seem improbable, the risk of data corruption during transfers is a concern when transferring large datasets. These large files take a long time to transfer, which translates to more opportunities for network connections to drop and bits to be lost. In addition to verifying your transfer finished without error, it’s also important to explicitly check the transferred data’s integrity with checksums. Checksums are very compressed summaries of data, computed in a way that even if just one bit of the data is changed, the checksum will be different.
+
+Data integrity checks are also helpful in keeping track of data versions. In collabora‐ tive projects, our analyses may depend on our colleagues’ intermediate results. When these intermediate results change, all downstream analyses that depend on these results need to be rerun.
+
+### SHA and MD5 Checksums
+
+The two most common checksum algorithms for ensuring data integrity are MD5 and SHA-1. MD5 is an older checksum algorithm, but one that is still commonly used. Both MD5 and SHA-1 behave similarly, but SHA-1 is newer and generally preferred. However, MD5 is more common; it’s likely to be what you encounter if
+a server has precomputed checksums on a set of files.
+
+Let’s get acquainted with checksums using SHA-1.
+
+```
+$ echo "bioinformatics is fun" | shasum
+f9b70d0d1b0a55263f1b012adab6abf572e3030b -
+$ echo "bioinformatic is fun" | shasum
+e7f33eedcfdc9aef8a9b4fec07e58f0cf292aa67 -
+```
+
+We can also use checksums with file input (note that the content of Csyrichta_TAGGACT_L008_R1_001.fastq is fake example data):
+
+```
+$ shasum Csyrichta_TAGGACT_L008_R1_001.fastq
+fea7d7a582cdfb64915d486ca39da9ebf7ef1d83 Csyrichta_TAGGACT_L008_R1_001.fastq
+```
+
+When downloading many files, it can get rather tedious to check each checksum individually. The program shasum has a convenient solution—it can create and validate against a file containing the checksums of files. We can create a SHA-1 checksum file for all FASTQ files in the data/ directory as follows:
+
+```
+$ shasum data/*fastq > fastq_checksums.sha
+$ cat fastq_checksums.sha
+```
+
+Then, we can use shasum’s check option (-c) to validate that these files match the original versions:
+
+```
+$ shasum -c fastq_checksums.sha
+```
+
+### Looking at Differences Between Data
+
+While checksums are a great method to check if files are different, they don’t tell us how files differ. One approach to this is to compute the diff between two files using the Unix tool diff. Unix’s diff works line by line, and outputs blocks (called hunks) that differ between files.
+
+An example is:
+
+```
+$ diff -u gene-1.bed gene-2.bed
+```
+
+The option -u tells diff to output in unified diff format, which is a format nearly identical to the one used by git diff.
+
+### Compressing Data and Working with Compressed Data
+
+Data compression, the process of condensing data so that it takes up less space (on disk drives, in memory, or across network transfers), is an indispensable technology in modern bioinformatics. For example, sequences from a recent Illumina HiSeq run when compressed with Gzip take up 21,408,674,240 bytes, which is a bit under 20 gigabytes. Uncompressed, this file is a whopping 63,203,414,514 bytes (around 58 gigabytes). The compression ratio (uncompressed size/compressed size) of this data is approximately 2.95, which translates to a significant
+space saving of about 66%.
+
+For the most part, data can remain compressed on the disk throughout processing and analyses. Most well-written bioinformatics tools can work natively with compressed data as input, without requiring us to decompress it to disk first.
+
+#### gzip
+
+The two most common compression systems used on Unix are gzip and bzip2. Both have their advantages: gzip compresses and decompresses data faster than bzip2, but bzip2 has a higher compression ratio (the previously mentioned FASTQ file is only about 16 GB when compressed with bzip2). Generally, gzip is used in bioinformatics to compress most sizable files, while bzip2 is more common for long-term data archiving. We’ll focus primarily on gzip, but bzip2’s tools behave very similarly to gzip.
+
+For example, suppose we have a program that removes low-quality bases from FASTQ files called trimmer (this is an imaginary program). Our trimmer program can handle gzipped input files natively, but writes uncompressed trimmed FASTQ results to standard output. Using gzip, we can compress trimmer’s output in place, before writing to the disk:
+
+```
+$ trimmer in.fastq.gz | gzip > out.fastq.gz
+```
+
+gzip also can compress files on disk in place.
+
+```
+$ ls
+in.fastq
+$ gzip in.fastq
+$ ls
+in.fastq.gz
+```
+
+Similarly, we can decompress files in place with the command gunzip:
+
+```
+$ gunzip in.fastq.gz
+$ ls
+in.fastq
+```
+
+A nice feature of the gzip compression algorithm is that you can concatenate gzip compressed output directly to an existing gzip file, like below.
+
+```
+$ ls
+in.fastq.gz in2.fastq
+$ gzip -c in2.fastq >> in.fastq.gz
+```
+
+### Case Study: Reproducibly Downloading Data
+
+- Downloading data:
+
+```
+wget ftp://ftp.ensembl.org/pub/release-74/fasta/mus_musculus/dna/Mus_musculus.GRCm38.74.dna.toplevel.fa.gz
+```
+
+- Extracting the FASTA headers on this gzipped file:
+
+```
+$ zgrep "^>" Mus_musculus.GRCm38.74.dna.toplevel.fa.gz | less
+```
+
+- Creating checksum file and comparing them:
+
+```
+$ wget ftp://ftp.ensembl.org/pub/release-74/fasta/mus_musculus/dna/CHECKSUMS
+$ sum Mus_musculus.GRCm38.74.dna.toplevel.fa.gz
+53504 793314
+```
+
+- Calculating the SHA-1 sum using shasum:
+
+```
+$ shasum Mus_musculus.GRCm38.74.dna.toplevel.fa.gz
+01c868e22a981[...]c2154c20ae7899c5f Mus_musculus.GRCm38.74.dna.toplevel.fa.gz
+```
+
+- Downloading an accompanying GTF from Ensembl and the CHECKSUMS file for this directory:
+
+```
+$ wget ftp://ftp.ensembl.org/pub/release-74/gtf/mus_musculus/Mus_musculus.GRCm38.74.gtf.gz
+$ wget ftp://ftp.ensembl.org/pub/release-74/gtf/mus_musculus/CHECKSUMS
+```
+
+- Ensuring that our checksums match those in the CHECKSUMS file:
+
+```
+$ sum Mus_musculus.GRCm38.74.gtf.gz
+00985 15074
+$ shasum cf5bb5f8bda2803410bb04b708bff59cb575e379 Mus_musculus.GRCm38.74.gtf.gz
+```
+
 ## Chapter 7
 ## Chapter 8
 ## Chapter 9
