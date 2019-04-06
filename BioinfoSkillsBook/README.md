@@ -63,17 +63,17 @@ In addition to having a well-organized directory structure, your bioinformatics 
 
 So what exactly should you document? Here are some ideas:
 
-- Document your methods and workflows: In general, any command that produces results used in your work needs to be documented somewhere.
+- **Document your methods and workflows**: In general, any command that produces results used in your work needs to be documented somewhere.
 
-- Document the origin of all data in your project directory: You need to keep track of where data was downloaded from, who gave it to you, and any other relevant information. “Data” doesn’t just refer to your project’s experimental data—it’s any data that programs use to create output.
+- **Document the origin of all data in your project directory**: You need to keep track of where data was downloaded from, who gave it to you, and any other relevant information. “Data” doesn’t just refer to your project’s experimental data—it’s any data that programs use to create output.
 
-- Document when you downloaded data: It’s important to include when the data was downloaded, as the external data source (such as a website or server) might change in the future. For example, a script that downloads data directly from a database might produce different results if rerun after the external database is updated. Consequently, it’s important to document when data came into your repository.
+- **Document when you downloaded data**: It’s important to include when the data was downloaded, as the external data source (such as a website or server) might change in the future. For example, a script that downloads data directly from a database might produce different results if rerun after the external database is updated. Consequently, it’s important to document when data came into your repository.
 
-- Record data version information: Many databases have explicit release numbers, version numbers, or names (e.g., TAIR10 version of genome annotation for Arabidopsis thaliana, or Wormbase release WS231 for Caenorhabditis elegans . It’s important to record all version information in your documentation, including minor version numbers.
+- **Record data version information**: Many databases have explicit release numbers, version numbers, or names (e.g., TAIR10 version of genome annotation for Arabidopsis thaliana, or Wormbase release WS231 for Caenorhabditis elegans . It’s important to record all version information in your documentation, including minor version numbers.
 
-- Describe how you downloaded the data: For example, did you use MySQL to download a set of genes? Or the UCSC Genome Browser? These details can be useful in tracking down issues like when data is different between collaborators.
+- **Describe how you downloaded the data**: For example, did you use MySQL to download a set of genes? Or the UCSC Genome Browser? These details can be useful in tracking down issues like when data is different between collaborators.
 
-- Document the versions of the software that you ran: Good bioinformatics software usually has a command-line option to return the current version. Software managed with a version control system such as Git has explicit identifiers to every version, which can be used to document the precise version you ran. If no version information is available, a release date, link to the software, and download date will suffice.
+- **Document the versions of the software that you ran**: Good bioinformatics software usually has a command-line option to return the current version. Software managed with a version control system such as Git has explicit identifiers to every version, which can be used to document the precise version you ran. If no version information is available, a release date, link to the software, and download date will suffice.
 
 All of this information is best stored in plain-text README files. Plain text can easily be read, searched, and edited directly from the command line, making it the perfect choice for portable and accessible README files.
 
@@ -1439,13 +1439,298 @@ Order to follow: chapter 1, 2, 3, 6, 7, 9, 10, 11, 12, 8.
 
 (175 to 261)
 
+To install R in all OSs, we can follow this tutorial: 
+https://www.datacamp.com/community/tutorials/installing-R-windows-mac-ubuntu#ubuntu
+
 ## Chapter 9 - Working with Range Data
 
-(263 to 337)
+Luckily for bioinformaticians, every genome from every branch of life on earth consists of chromosome sequences that can be represented on a computer in the same way: as a set of nucleotide sequences (genomic variation and assembly uncertainty
+aside). Each separate sequence represents a reference DNA molecule, which may correspond to a fully assembled chromosome, or a scaffold or contig in a partially assembled genome. Although nucleotide sequences are linear, they may also represent biologically circular chromosomes (e.g., with plasmids or mitochondria) that have been cut.
+
+Many types of genomic data are linked to a specific genomic region, and this region can be represented as a range containing consecutive positions on a chromosome. Annotation data and genomic features like gene models, genetic variants like SNPs and insertions/deletions, transposable elements, binding sites, and statistics like pairwise diversity and GC content can all be represented as ranges on a linear chromosome sequence. Sequencing read alignment data resulting from experiments like whole genome resequencing, RNA-Seq, ChIP-Seq, and bisulfite sequencing can also be represented as ranges.
+
+Once our genomic data is represented as ranges on chromosomes, there are numerous range operations at our disposal to tackle tasks like finding and counting overlaps, calculating coverage, finding nearest ranges, and extracting nucleotide sequences from specific ranges.
+
+### A Crash Course in Genomic Ranges and Coordinate Systems
+
+So what are ranges exactly? Ranges are integer intervals that represent a subsequence of consecutive positions on a sequence like a chromosome.
+
+Ranges alone only specify a region along a single sequence like a chromosome; to specify a genomic region or position, we need three necessary pieces of
+information:
+
+- **Chromosome name**: This is also known as sequence name (to allow for sequences that aren’t fully assembled, such as scaffolds or contigs). Each
+
+- **Range**: For example, 114,414,997 to 114,693,772 or 3,173,498 to 3,179,449. Ranges are how we specify a single subsequence on a chromosome sequence.
+
+- **Strand**: Because chromosomal DNA is double-stranded, features can reside on either the forward (positive) or reverse (negative) strand. Many features on a chromosome are strand-specific, so we need to specify which strand these features are on.
+
+Despite the convenience that comes with representing and working with genomic ranges, there are unfortunately some gritty details we need to be aware of. First, there are two different flavors of range systems used by bioinformatics data formats and software programs:
+
+- **0-based coordinate system, with half-closed, half-open intervals**: the first base of a sequence is position 0 and the last base’s position is the length of the sequence - 1 (exclude the last position). Example: [1, 5). In fact, Pytho strings work like this to:
+
+```
+$ python3
+>>> "CTTACTTCGAAGGCTG"[1:5]
+'TTAC'
+```
+
+- **1-based coordinate system, with closed intervals**: As you might have guessed, with 1-based systems the first base of a sequence is given the position 1. Because positions are counted as we do natural numbers, the last position in a sequence is always equal to its length. Closed intervals means like: [2,5]. 
+
+R uses 1-based indexing for its vectors and strings, and extracting a portion of a string with substr() uses closed intervals:
+
+```
+> substr("CTTACTTCGAAGGCTG", 2, 5)
+[1] "TTAC"
+```
+
+Here, we can see the range types of common bioinformatics formats:
+
+| Format/library  | Type |
+| ------------- | ------------- |
+| BED  | 0-based  |
+| GTF  | 1-based  |
+| GFF  | 1-based  |
+| SAM  | 1-based  |
+| BAM  | 0-based  |
+| VCF  | 1-based  |
+| BCF  | 0-based  |
+| Wiggle  | 1-based  |
+| GenomicRanges  | 1-based  |
+| BLAST  | 1-based  |
+| GenBank/EMBL Feature Table  | 1-based  |
+
+The second gritty detail we need to worry about is strand. There’s little to say except: you need to mind strand in your work. Because DNA is double stranded, genomic features can lie on either strand.
+However, a genomic feature can be either on the forward or reverse strand. For genomic features like protein coding regions, strand matters and must be specified. For example, a range representing a protein coding region only makes biological sense given the appropriate strand.
+
+### An Interactive Introduction to Range Data with GenomicRanges
+
+(Continue later)
 
 ## Chapter 10 - Working with Sequence Data
 
-(339 to 354)
+Nucleotide (and protein) sequences are stored in two plain-text formats widespread in bioinformatics: FASTA and FASTQ. We’ll discuss each format and their limitations in this section, and then see some tools for working with data in these formats.
+
+### The FASTA Format
+
+The FASTA format originates from the FASTA alignment suite, created by William R. Pearson and David J. Lipman. The FASTA format is used to store any sort of sequence data not requiring per-base pair quality scores. This includes reference genome files, protein sequences, coding DNA sequences (CDS), transcript sequences, and so on.
+
+FASTA files are composed of sequence entries, each containing two parts: a description and the sequence data. The description line begins with a greater than symbol (>) and contains the sequence identifier and other (optional) information. The sequence data begins on the next line after the description, and continues until there’s another description line (a line beginning with >) or the file ends.
+
+The egfr_flank.fasta file in this chapter’s GitHub directory is an example FASTA file:
+
+```
+$ head -10 egfr_flank.fasta
+>ENSMUSG00000020122|ENSMUST00000138518
+CCCTCCTATCATGCTGTCAGTGTATCTCTAAATAGCACTCTCAACCCCCGTGAACTTGGT
+TATTAAAAACATGCCCAAAGTCTGGGAGCCAGGGCTGCAGGGAAATACCACAGCCTCAGT
+TCATCAAAACAGTTCATTGCCCAAAATGTTCTCAGCTGCAGCTTTCATGAGGTAACTCCA
+GGGCCCACCTGTTCTCTGGT
+>ENSMUSG00000020122|ENSMUST00000125984
+GAGTCAGGTTGAAGCTGCCCTGAACACTACAGAGAAGAGAGGCCTTGGTGTCCTGTTGTC
+TCCAGAACCCCAATATGTCTTGTGAAGGGCACACAACCCCTCAAAGGGGTGTCACTTCTT
+CTGATCACTTTTGTTACTGTTTACTAACTGATCCTATGAATCACTGTGTCTTCTCAGAGG
+CCGTGAACCACGTCTGCAAT
+```
+
+The FASTA format’s simplicity and flexibility comes with an unfortunate downside: the FASTA format is a loosely defined ad hoc format (which unfortunately are quite common in bioinformatics). This is why it’s usually preferable to use existing FASTA/FASTQ parsing libraries instead of implementing your own; existing libraries have already been vetted by the open source community.
+
+Most troubling about the FASTA format is that there’s no universal specification for the format of an identifier in the description. For example, should the following FASTA descriptions refer to the same entry?
+
+```
+>ENSMUSG00000020122|ENSMUST00000138518
+> ENSMUSG00000020122|ENSMUST00000125984
+>ENSMUSG00000020122|ENSMUST00000125984|epidermal growth factor receptor
+>ENSMUSG00000020122|ENSMUST00000125984|Egfr
+>ENSMUSG00000020122|ENSMUST00000125984|11|ENSFM00410000138465
+```
+
+Without a standard scheme for identifiers, we can’t use simple exact matching to check if an identifier matches a FASTA entry header line. Instead, we would need to rely on fuzzy matching between FASTA descriptions and our identifier.
+
+A common naming convention is to split the description line into two parts at the first space: the identifier and the comment. A sequence in this format would look like:
+
+```
+>gene_00284728 length=231;type=dna
+GAGAACTGATTCTGTTACCGCAGGGCATTCGGATGTGCTAAGGTAGTAATCCATTATAAGTAACATGCGCGGAATATCCG
+GAGGTCATAGTCGTAATGCATAATTATTCCCTCCCTCAGAAGGACTCCCTTGCGAGACGCCAATACCAAAGACTTTCGTA
+GCTGGAACGATTGGACGGCCCAACCGGGGGGAGTCGGCTATACGTCTGATTGCTACGCCTGGACTTCTCTT
+```
+
+### The FASTQ Format
+
+The FASTQ format extends FASTA by including a numeric quality score to each base in the sequence. The FASTQ format is widely used to store high-throughput sequencing data, which is reported with a per-base quality score indicating the confidence of each base call.
+
+The FASTQ format looks like:
+
+```
+@DJB775P1:248:D0MDGACXX:7:1202:12362:49613 (1)
+TGCTTACTCTGCGTTGATACCACTGCTTAGATCGGAAGAGCACACGTCTGAA (2)
++ (3)
+JJJJJIIJJJJJJHIHHHGHFFFFFFCEEEEEDBD?DDDDDDBDDDABDDCA (4)
+@DJB775P1:248:D0MDGACXX:7:1202:12782:49716
+CTCTGCGTTGATACCACTGCTTACTCTGCGTTGATACCACTGCTTAGATCGG
++
+IIIIIIIIIIIIIIIHHHHHHFFFFFFEECCCCBCECCCCCCCCCCCCCCCC
+```
+
+1. Description line, which contains the identifier and other information
+2. Sequence data.
+3. End of the sequence.
+4. Quality data encoded with ASCII characters.
+
+We can use the fact that the number of quality score characters must be equal to the number of sequence characters to reliably parse this format—which is how the readfq parser introduced later on works, because @ character is not only the delimiter of the header but can be a quality character.
+
+#### Counting FASTA/FASTQ Entries
+
+```
+$ grep -c "^>" egfr_flank.fasta
+5
+```
+
+This approach will fail on FASTQ, because it counts que @ quality character too. 
+
+```
+$ grep -c "^@" untreated1_chr4.fq
+208779
+```
+
+If you’re absolutely positive your FASTQ file uses four lines per sequence entry, you can estimate the number of sequences by estimating the number of lines with wc -l and dividing by four. If you’re unsure if some of your FASTQ entries wrap across many lines, a more robust way to count sequences is with bioawk:
+
+```
+$ bioawk -cfastx 'END{print NR}' untreated1_chr4.fq
+204355
+```
+
+### Nucleotide Codes
+
+With the basic FASTA/FASTQ formats covered, let’s look at the standards for encoding nucleotides and base quality scores in these formats. Clearly, encoding nucleotides is simple: A, T, C, G. Lowercase bases are often used to indicate soft masked repeats or low complexity sequences.
+Repeats and low-complexity sequences may also be hard masked, where nucleotides are replaced with N (or sometimes an X). Degenerate (or ambiguous) nucleotide codes are used to represent two or more bases. For example, N is used to represent any base.
+
+### Base Qualities
+
+Each sequence base of a FASTQ entry has a corresponding numeric quality score in the quality line(s). Each base quality scores is encoded as a single ASCII character. Quality lines look like a string of random characters, like the fourth line here:
+
+```
+@AZ1:233:B390NACCC:2:1203:7689:2153
+GTTGTTCTTGATGAGCCATGAGGAAGGCATGCCAAATTAAAATACTGGTGCGAATTTAAT
++
+CCFFFFHHHHHJJJJJEIFJIJIJJJIJIJJJJCDGHIIIGIGIJIJIIIIJIJJIJIIH
+```
+
+Remember, ASCII characters are just represented as integers between 0 and 127 under the hood. Because not all ASCII characters are printable to screen (e.g., character echoing "\07" makes a “ding” noise)qualities are restricted to the printable ASCII characters, ranging from 33 to 126 (the space character, 32, is omitted).
+
+All programming languages have functions to convert from a character to its decimal ASCII representation, and from ASCII decimal to character. In Python, these are the functions ord() and chr(), respectively. Let’s use ord() in Python’s interactive interpreter to convert the quality characters to a list of ASCII decimal representations:
+
+```
+>>> qual = "JJJJJJJJJJJJGJJJJJIIJJJJJIGJJJJJIJJJJJJJIJIJJJJHHHHHFFFDFCCC"
+>>> [ord(b) for b in qual]
+[74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 71, 74, 74, 74, 74, 74, 73,
+73, 74, 74, 74, 74, 74, 73, 71, 74, 74, 74, 74, 74, 73, 74, 74, 74, 74, 74,
+74, 74, 73, 74, 73, 74, 74, 74, 74, 72, 72, 72, 72, 72, 70, 70, 70, 68, 70,
+67, 67, 67]
+```
+
+Unfortunately, converting these ASCII values to meaningful quality scores can be tricky because there are three different quality schemes: Sanger, Solexa, and Illumina. The Open Bioinformatics Foundation (OBF), which is responsible for projects like Biopython, BioPerl, and BioRuby, gives these the names fastq-sanger, fastq-solexa, and fastq-illumina.
+
+Below, we can see FASTQ quality schemes:
+
+| Name  | ASCII range | Offset | Quality score type | Quality score range
+| ------------- | ------------- | ------------- | ------------- | ------------- |
+| Sanger, Illumina (versions 1.8 onward) | 33–126 | 33 | PHRED | 0–93
+| Solexa, early Illumina (before 1.3) | 59–126  | 64 | Solexa | 5-62 
+| Illumina (versions 1.3–1.7) | 64–126  | 64 | PHRED | 0-62
+
+First, we need to subtract an offset to convert this Sanger quality score to a PHRED quality score. PHRED was an early base caller written by Phil Green, used for fluorescence trace data written by Phil Green. Looking at the table above, notice that the Sanger
+format’s offset is 33, so we subtract 33 from each quality score:
+
+```
+>>> phred = [ord(b)-33 for b in qual]
+>>> phred
+[41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 38, 41, 41, 41, 41, 41, 40,
+40, 41, 41, 41, 41, 41, 40, 38, 41, 41, 41, 41, 41, 40, 41, 41, 41, 41, 41,
+41, 41, 40, 41, 40, 41, 41, 41, 41, 39, 39, 39, 39, 39, 37, 37, 37, 35, 37,
+34, 34, 34]
+```
+
+Using the formula to convert quality score to the estimated probability the base is correct:
+
+```
+>>> [10**(-q/10) for q in phred]
+[1e-05, 1e-05, 1e-05, 1e-05, 1e-05, 1e-05, 1e-05, 1e-05, 1e-05, 1e-05, 1e-05,
+1e-05, 0.0001, 1e-05, 1e-05, 1e-05, 1e-05, 1e-05, 0.0001, 0.0001, 1e-05,
+1e-05, 1e-05, 1e-05, 1e-05, 0.0001, 0.0001, 1e-05, 1e-05, 1e-05, 1e-05,
+1e-05, 0.0001, 1e-05, 1e-05, 1e-05, 1e-05, 1e-05, 1e-05, 1e-05, 0.0001,
+1e-05, 0.0001, 1e-05, 1e-05, 1e-05, 1e-05, 0.0001, 0.0001, 0.0001, 0.0001,
+0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001]
+```
+
+### Example: Inspecting and Trimming Low-Quality Bases
+
+Our Python list of base accuracies is useful as a learning tool to see how to convert qualities to probabilities, but it won’t help us much to understand the quality profiles of millions of sequences. In this sense, a picture is worth a thousand words—and there’s software to help us see the quality distributions across bases in reads. We’ll use qrqc R package through Bioconductor in examples so we can tinker with how we visualize this data ourselves.
+
+Let’s first install all the necessary programs for this example. First, install qrqc in R with:
+
+```
+> library(BiocInstaller)
+> biocLite('qrqc')
+```
+
+Next, let’s install two programs that will allow us to trim low-quality bases: **sickle** and **seqtk**. seqtk is a general-purpose sequence toolkit written by Heng Li that contains a subcommand for trimming low-quality bases off the end of sequences.
+
+```
+sudo apt-get install sickle
+sudo apt-get install seqtk
+```
+
+After getting these programs installed, let’s trim the untreated1_chr4.fq FASTQ file in this chapter’s directory in the GitHub repository. This FASTQ file was generated from the untreated1_chr4.bam BAM file in the pasillaBamSubset Bioconductor package. To keep
+things simple, we’ll use each program’s default settings. Starting with sickle:
+
+```
+$ sickle se -f untreated1_chr4.fq -t sanger -o untreated1_chr4_sickle.fq
+FastQ records kept: 203121
+FastQ records discarded: 1234
+```
+
+Now, let’s run seqtk trimfq, which takes a single argument and outputs trimmed sequences through standard out:
+
+$ seqtk trimfq untreated1_chr4.fq > untreated1_chr4_trimfq.fq
+
+Let’s compare these results in R. We’ll use qrqc to collect the distributions of quality by position in these files, and then visualize these using ggplot2. We could load these in one at a time, but a nice workflow is to automate this with lapply(). The script is on chapter10 package and produces two plots (plot1 and plot2): where We see the effect both trimming programs have on our data’s quality distributions in  low-quality bases, we narrow the quality ranges in base positions further in the read.
+Furthermore, we see this increases mean quality across across the read, but we still
+see a decline in base quality over the length of the reads.
+
+In one line, we can trim low-quality bases from the ends of these sequences—running the trimming commands is not difficult. The more important step is to visualize what these trimming programs did to our data by comparing the files before and after
+trimming.
+
+### A FASTA/FASTQ Parsing Example: Counting Nucleotides
+
+It’s not too difficult to write your own FASTA/FASTQ parser and it’s a useful educational programming exercise. But when it comes to using a parser for processing real data, it’s best to use a reliable existing library.
+
+We’ll use Heng Li’s readfq implementation because it parses both FASTA and FASTQ files, it’s simple to use, and is standalone (meaning it doesn’t require installing any dependencies). **Biopython** and **BioPerl** are two popular libraries with good alternative FASTA/FASTQ parsers.
+
+We’ll use the Python implementation of readfq, readfq.py to read FASTQ files and let’s write a simple program that counts the number of each IUPAC nucleotide in a file (nuccont.py):
+
+This version takes input through standard in, so after saving this file and adding execute permissions with **chmod +x nuccount.py**, we could run it with:
+
+```
+$ cat contam.fastq | ./nuccount.py
+A 103
+C 110
+G 94
+T 109
+R 0
+Y 0
+S 0
+W 0
+K 0
+M 0
+B 0
+D 0
+H 0
+V 0
+N 0
+```
+
+There are many improvements we could add to this script: add support for persequence base composition statistics, take file arguments rather than input through standard in, count soft-masked (lowercase) characters, count CpG sites, or warn when a non-IUPAC nucleotide is found in a file. Counting nucleotides is simple—the most complex part of the script is readfq(). This is the beauty of reusing code: well-written functions and libraries prevent us from having to rewrite complex parsers.
 
 ## Chapter 11 - Working with Alignment Data
 
@@ -1454,3 +1739,4 @@ Order to follow: chapter 1, 2, 3, 6, 7, 9, 10, 11, 12, 8.
 ## Chapter 12 - Bioinformatics Shell Scripting, Writing Pipelines, and Parallelizing Tasks
 
 (395 to 423)
+
