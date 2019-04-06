@@ -1734,9 +1734,237 @@ There are many improvements we could add to this script: add support for persequ
 
 ## Chapter 11 - Working with Alignment Data
 
-(355 to 394)
+In Chapter 9, we learned about range formats such as BED and GTF, which are often used to store genomic range data associated with genomic feature annotation data such as gene models. Other kinds of range-based formats are designed for storing large amounts of alignment data—for example, the results of aligning millions (or billions) of high-throughput sequencing reads to a genome. In this chapter, we’ll look at the most common high-throughput data alignment format: the Sequence Alignment/Mapping (SAM) format for mapping data (and its binary analog, BAM). The SAM and BAM formats are the standard formats for storing sequencing reads mapped to a reference.
+
+We study SAM and BAM for two reasons. First, a huge part of bioinformatics work is manipulating alignment files. Nearly every high-throughput sequencing experiment involves an alignment step that produces alignment data in the SAM/BAM formats.
+Second, the skills developed through learning to work with SAM/BAM files are extensible and more widely applicable than to these specific formats.
+
+### Getting to Know Alignment Formats: SAM and BAM
+
+Before learning to work with SAM/BAM, we need to understand the structure of these formats. We’ll do this by using celegans.sam, a small example SAM file.
+
+#### SAM header
+
+Files in the SAM format consist of a header section and an alignment section. Because SAM files are plain text (unlike their binary counterpart, BAM), we can take a peek at a few lines of the header with head:
+
+```
+$ head -n 10 celegans.sam
+@SQ SN:I LN:15072434
+@SQ SN:II LN:15279421
+@SQ SN:III LN:13783801
+@SQ SN:IV LN:17493829
+@SQ SN:MtDNA LN:13794
+@SQ SN:V LN:20924180
+@SQ SN:X LN:17718942
+@RG ID:VB00023_L001 SM:celegans-01
+@PG ID:bwa PN:bwa VN:0.7.10-r789 [...]
+I_2011868_2012306_0:0:0_0:0:0_2489 83 I 2012257 40 50M [...]
+```
+
+The standard way of interacting with SAM/BAM files is through the SAMtools command-line program (samtools), which we’ll use extensively throughout the rest of this chapter. 
+
+A universal way to look at an entire SAM/BAM header is with samtools view option -H:
+
+```
+$ sudo apt-get install samtools
+$ samtools view -H celegans.sam
+@SQ SN:I LN:15072434
+@SQ SN:II LN:15279421
+@SQ SN:III LN:13783801
+[...]
+```
+
+This also works with BAM files:
+
+```
+$ samtools view -H celegans.bam
+@SQ SN:I LN:15072434
+@SQ SN:II LN:15279421
+@SQ SN:III LN:13783801
+[...]
+```
+
+Of course, all our usual Unix tricks can be combined with samtools commands through piping results to other commands. For example, we could see all read groups with:
+
+```
+$ samtools view -H celegans.bam | grep "^@RG"
+@RG ID:VB00023_L001 SM:celegans-01
+```
+
+#### SAM alignment section
+
+The alignment section contains read alignments (and usually includes reads that did not align, but this depends on the aligner and file). Each alignment entry is composed of 11 required fields (and optional fields after this).
+
+```
+$ samtools view celegans.sam | tr '\t' '\n' | head -n 11
+I_2011868_2012306_0:0:0_0:0:0_2489
+83
+I
+2012257
+40
+50M
+=
+2011868
+-439
+CAAAAAATTTTGAAAAAAAAAATTGAATAAAAATTCACGGATTTCTGGCT
+22222222222222222222222222222222222222222222222222
+```
+
+#### CIGAR strings
+
+Like bitwise flags, SAM’s CIGAR strings are another specialized way to encode information about an aligned sequence. While bitwise flags store true/false properties about an alignment, CIGAR strings encode information about which bases of an alignment are matches/mismatches, insertions, deletions, soft or hard clipped, and so on. I’ll assume you are familiar with the idea of matches, mismatches, insertions, and deletions, but it’s worth describing soft and hard clipping (as SAM uses them).
+
+The cigar operations are:
+
+M 0 Alignment match (note that this could
+be a sequence match or mismatch!)
+I 1 Insertion (to reference)
+D 2 Deletion (from reference)
+N 3 Skipped region (from reference)
+S 4 Soft-clipped region (soft-clipped
+regions are present in sequence in SEQ field)
+H 5 Hard-clipped region (not in sequence in SEQ field)
+P 6 Padding (see section 3.1 of the SAM
+format specication for detail)
+= 7 Sequence match
+
+For example, a fully aligned 51 base pair read without insertions or deletions would
+have a CIGAR string containing a single length/operation pair: 51M.
+
+#### Mapping Qualities
+
+Our discussion of the SAM and BAM formats is not complete without mentioning mapping qualities (Li et al., 2008). Mapping qualities are one of the most important diagnostics in alignment. All steps downstream of alignment in all bioinformatics projects (e.g., SNP calling and genotyping, RNA-seq, etc.) critically depend on reliable mapping. Mapping qualities quantify mapping reliability by estimating how likely a read is to actually originate from the position the aligner has mapped it to.
+
+We can use mapping qualities to filter out likely incorrect alignments (which we can do with samtools view, which we’ll learn about later), find regions where mapping quality is unusually low among most alignments (perhaps in repetitive or paralogous
+regions), or assess genome-wide mapping quality distributions (which could indicate alignment problems in highly repetitive or polyploid genomes).
+
+### Command-Line Tools for Working with Alignments in the SAM Format
+
+In this section, we’ll learn about the Samtools suite of tools for manipulating and working with SAM,BAM, and CRAM files. These tools are incredibly powerful, and becoming skilled in working with these tools will allow you to both quickly move forward in file-processing tasks and explore the data in alignment files.
+
+#### Using samtools view to Convert between SAM and BAM
+
+Many samtools subcommands such as sort, index, depth,and mpileup all require input files (or streams) to be in BAM format for efficiency, so we often need to convert between plain-text SAM and binary BAM formats. samtools view allows us to convert SAM to BAM with the -b option:
+
+```
+$ samtools view -b celegans.sam > celegans_copy.bam
+```
+
+Similarly, we can go from BAM to SAM:
+
+```
+$ samtools view celegans.bam > celegans_copy.sam
+$ head -n 3 celegans_copy.sam
+I_2011868_2012306_0:0:0_0:0:0_2489 83 I 2012257 40 [...]
+I_2011868_2012306_0:0:0_0:0:0_2489 163 I 2011868 60 [...]
+I_13330604_13331055_2:0:0_0:0:0_3dd5 83 I 13331006 60 [...]
+```
+
+However, samtools view will not include the SAM header (see “The SAM Header” on page 356) by default. SAM files without headers cannot be turned back into BAM files:
+
+```
+$ samtools view -b celegans_copy.sam > celegans_copy.bam
+[E::sam_parse1] missing SAM header
+[W::sam_read1] parse error at line 1
+[main_samview] truncated file.
+```
+
+Converting BAM to SAM loses information when we don’t include the header. We can include the header with -h:
+
+```
+$ samtools view -h celegans.bam > celegans_copy.sam
+$ samtools view -b celegans_copy.sam > celegans_copy.bam #now we can convert back
+```
+
+#### Samtools Sort and Index
+
+We sort alignments by their alignment position with samtools sort:
+
+```
+$ samtools sort celegans_unsorted.bam celegans_sorted
+```
+
+We can use the samtools sort option -m to increase the memory, and -@ to specify how many threads to use. For example:
+
+```
+$ samtools sort -m 4G -@ 2 celegans_unsorted.bam celegans_sorted
+```
+
+Often, we want to work with alignments within a particular region in the genome. For example, we may want to extract these reads using samtools view or only call SNPs within this region. Iterating through an entire BAM file just to work with a subset of reads at a position would be inefficient; consequently, BAM files can be indexed. The BAM file must be sorted first, and we cannot index SAM files. To index a position-sorted BAM file, we simply use:
+
+```
+$ samtools index celegans_sorted.bam
+```
+
+(Continue later: 368 to 394)
 
 ## Chapter 12 - Bioinformatics Shell Scripting, Writing Pipelines, and Parallelizing Tasks
 
-(395 to 423)
+I’ve waited until the penultimate chapter this book to share a regrettable fact: everyday bioinformatics work often involves a great deal of tedious data processing. Bioinformaticians regularly need to run a sequence of commands on not just one file, but
+dozens (sometimes even hundreds) of files. Consequently, a large part of bioinformatics is patching together various processing steps into a pipeline, and then repeatedly applying this pipeline to many files. This isn’t exciting scientific work, but it’s a necessary hurdle before tackling more exciting analyses.
+
+While writing pipelines is a daily burden of bioinformaticians, it’s essential that pipelines are written to be robust and reproducible. Pipelines must be robust to problems that might occur during data processing. When we execute a series of commands on data directly into the shell, we usually clearly see if something goes awry—output files
+are empty when they should contain data or programs exit with an error. However, when we run data through a processing pipeline, we sacrifice the careful attention we paid to each step’s output to gain the ability to automate processing of numerous files. The catch is that not only are errors likely to still occur, they’re more likely to occur because we’re automating processing over more data files and using more steps. For these reasons, it’s critical to construct robust pipelines.
+
+Similarly, pipelines also play an important role in reproducibility. A well-crafted pipeline can be a perfect record of exactly how data was processed. In the best cases, an individual could download your processing scripts and data, and easily replicate your exact steps.
+
+In this chapter, we’ll learn the essential tools and skills to construct robust and repro‐
+
+ducible pipelines. We’ll see how to write rerunnable Bash shell scripts, automate file-processing tasks with find and xargs, run pipelines in parallel, and see a simple makefile.
+
+### Basic Bash Scripting
+
+Bash, the shell we’ve used interactively throughout the book, is also a full-fledged scripting language. Like many other tools presented in this book, the trick to using Bash scripts effectively in bioinformatics is knowing when to use them and when not to. Unlike Python, Bash is not a general-purpose language. Bash is explicitly designed to make running and interfacing command-line programs as simple as possible (a good characteristic of a shell!). For these reasons, Bash often takes the role as the duct tape language of bioinformatics (also referred to as a glue language), as it’s used to tape many commands together into a cohesive workflow.
+
+Before digging into how to create pipelines in Bash, it’s important to note that Python may be a more suitable language for commonly reused or advanced pipelines. Python is a more modern, fully featured scripting language than Bash. Compared to Python,
+Bash lacks several nice features useful for data-processing scripts: better numeric type
+support, useful data structures, better string processing, refined option parsing, availability of a large number of libraries, and powerful functions that help with structuring your programs. However, there’s more overhead when calling command-line
+programs from a Python script (known as calling out or shelling out) compared to Bash. Although Bash lacks some of Python’s features, Bash is often the best and quickest “duct tape” solution (which we often need in bioinformatics).
+
+#### Writing and Running Robust Bash Scripts
+
+Most Bash scripts in bioinformatics are simply commands organized into a rerunnable script with some added bells and whistles to check that files exist and ensuring any error causes the script to abort. These types of Bash scripts are quite simple to write: you’ve already learned important shell features like pipes, redirects, and background processes that play an important role in Bash scripts. In this section, we’ll cover the basics of writing and executing Bash scripts, paying particular attention to how create robust Bash scripts.
+
+##### A robust Bash header
+
+By convention, Bash scripts have the extension .sh. You can create them in your favorite text editor. Anytime you write a Bash script, you should use the following Bash script header, which sets some Bash options that lead to more robust scripts:
+
+```
+#!/bin/bash
+set -e
+set -u
+set -o pipefail
+```
+
+These three options are the first layer of protection against Bash scripts with silent errors and unsafe behavior. Unfortunately, Bash is a fragile language, and we need to mind a few other oddities to use it safely in bioinformatics. We’ll see these as we learn more about the language.
+
+##### Running Bash scripts
+
+While we can run any script (as long as it has read permissions) with bash script.sh, calling the script as an executable requires that it have executable permissions. We can set these using:
+
+```
+$ chmod u+x script.sh
+```
+
+This adds executable permissions (+x) for the user who owns the file (u). Then, the script can be run with ./script.sh.
+
+#### Variables and Command Arguments
+
+Bash variables play an extremely important role in robust, reproducible Bash scripts. Processing pipelines having numerous settings that should be stored in variables (e.g., which directories to store results in, parameter values for commands, input files, etc.). Storing these settings in a variable defined at the top of the file makes adjusting settings and rerunning your pipelines much easier.
+
+Unlike other programming languages, Bash’s variables don’t have data types. It’s helpful to think of Bash’s variables as strings (but that may behave differently depending on context). We can create a variable and assign it a value with (note that spaces matter when setting Bash variables—do not use spaces around the equals sign!):
+
+```
+results_dir="results/"
+```
+
+To access a variable’s value, we use a dollar sign in front of the variable’s name (e.g., $results_dir). You can experiment with this in a Bash script, or directly on the command line:
+
+```
+$ results_dir="results/"
+$ echo $results_dir
+results/
+```
+
+(399 to 423)
 
