@@ -44,7 +44,7 @@ Just as a well-organized laboratory makes a scientist’s life easier, a well-or
 
 Suppose you’re working on SNP calling in maize (Zea mays).
 
-```
+```bat
 $ mkdir zmays-snps
 $ cd zmays-snps
 $ mkdir data
@@ -77,8 +77,8 @@ So what exactly should you document? Here are some ideas:
 
 All of this information is best stored in plain-text README files. Plain text can easily be read, searched, and edited directly from the command line, making it the perfect choice for portable and accessible README files.
 
-```
-touch README data/README
+```bat
+$ touch README data/README
 ```
 
 ### Use Directories to Divide Up Your Project into Subprojects
@@ -95,13 +95,13 @@ Because automating file processing tasks is an integral part of bioinformatics, 
 
 The next command results in the same path organization that we've done before.
 
-```
+```bat
 mkdir -p zmays-snps/{data/seqs,scripts,analysis}
 ```
 
 - Creating files to see how consistent names help with grammatically working with files
 
-```
+```bat
 $ cd data
 $ touch seqs/zmays{A,B,C}_R{1,2}.fastq
 $ ls seqs/
@@ -111,7 +111,7 @@ zmaysA_R2.fastq zmaysB_R2.fastq zmaysC_R2.fastq
 
 Suppose that we wanted to programmatically retrieve all files that have the sample name zmaysB rather than having to manually specify each file.
 
-```
+```bat
 $ ls seqs/zmaysB*
 zmaysB_R1.fastq zmaysB_R2.fastq
 ```
@@ -119,7 +119,7 @@ zmaysB_R1.fastq zmaysB_R2.fastq
 Suppose a collaborator tells you that the C sample sequences are poor quality, so you’ll have to work with just the A and B samples while C is resequenced. You don’t want to delete zmaysC_R1.fastq and zmaysC_R2.fastq until the new samples
 are received, so in the meantime you want to ignore these files. The folks that invented wildcards foresaw problems like this, so they created shell wildcards that allow you to match specific characters or ranges of characters.
 
-```
+```bat
 $ ls zmays[AB]_R1.fastq
 zmaysA_R1.fastq zmaysB_R1.fastq
 $ ls zmays[A-B]_R1.fastq
@@ -138,7 +138,7 @@ Markdown is just plain-text, which means that it’s portable and programs to ed
 
 - Markdown Formatting Basics (see README on chapter2 directory)
 
-```
+```markdown
 *emphasis*:  emphasis
 **bold**: bold
 `inline code`: inline code
@@ -161,7 +161,7 @@ Header level 2
 
 Pandoc can convert between a variety of different markup and output formats. Using Pandoc is very simple—to convert from Markdown to HTML, use the --from mark down and --to html options and supply your input file as the last argument:
 
-```
+```bat
 $ pandoc --from markdown --to html notebook.md > output.html
 ```
 
@@ -185,7 +185,7 @@ other programs. The modular approach of the Unix philosophy has many advantages 
 
 The last point to stress about the Unix shell is that it’s incredibly powerful. With simple features like wildcards, it’s trivial to apply a command to hundreds of files, like in the next example:
 
-```
+```bat
 $ rm -rf tmp-data/aligned-reads* # deletes all old large files
 $ # versus
 $ rm -rf tmp-data/aligned-reads * # deletes your entire current directory
@@ -203,7 +203,7 @@ to.
 
 Sequence data from: https://github.com/vsbuffalo/bds-files/tree/master/chapter-03-remedial-unix
 
-```
+```bat
 $ cat tb1-protein.fasta
 >teosinte-branched-1 protein
 LGVPSVKHMFPFCDSSSPMDLPLYQQLQLSPSSPKTDQSSSFYCYPCSPP
@@ -231,7 +231,7 @@ GGEGSSDGGT
 
 To redirect this concatenated sequences to a file, use the operators > or >>.
 
-```
+```bat
 $ cat tb1-protein.fasta tga1-protein.fasta > zea-proteins.fasta
 ```
 
@@ -241,7 +241,7 @@ Because many programs use the standard output stream for outputting data, a sepa
 
 Trying to access a file not available:
 
-```
+```bat
 $ ls -l tb1-protein.fasta leafy1.fasta
 ls: leafy1.fasta: No such file or directory
 -rw-r--r-- 1 vinceb staff 0 Feb 21 21:58 tb1.fasta
@@ -249,7 +249,7 @@ ls: leafy1.fasta: No such file or directory
 
 To redirect each stream to separate files, we combine the > operator from the previous section with a new operator for redirecting the standard error stream, 2>:
 
-```
+```bat
 $ ls -l tb1-protein.fasta leafy1.fasta > listing.txt 2> listing.stderr
 $ cat listing.txt
 -rw-r--r-- 1 vinceb staff 152 Jan 20 21:24 tb1.fasta
@@ -261,7 +261,7 @@ ls: leafy1.fasta: No such file or directory
 
 The Unix shell also provides a redirection operator for standard input. Normally standard input comes from your keyboard, but with the < redirection operator you can read standard input directly from a file. Though standard input redirection is less common than >, >>, and 2>, it is still occasionally useful:
 
-```
+```bat
 $ program < inputfile > outputfile
 ```
 
@@ -275,7 +275,7 @@ Passing the output of one program directly into the input of another program wit
 
 Our pipeline would first remove all header lines (those that begin with >) from the FASTA files, as we only care if sequences have non-nucleotide characters. The remaining sequences of the FASTA file could then be piped to another instance of grep, which would only print lines containing non-nucleotide characters. To make these easier to spot in our terminal, we could also color these matching characters. The entire command would look like:
 
-```
+```bat
 $ grep -v "^>" tb1-protein.fasta | grep --color -i "[^ATCG]"
 CCCCAAAGACGGACCAATCCAGCAGCTTCTACTGCTAYCCATGCTCCCCTCCCTTCGCCGCCGCCGACGC
 ```
@@ -284,14 +284,14 @@ CCCCAAAGACGGACCAATCCAGCAGCTTCTACTGCTAYCCATGCTCCCCTCCCTTCGCCGCCGCCGACGC
 
 Large bioinformatics programs like aligners, assemblers, and SNP callers will often use multiple streams simultaneously. For example, suppose we have two imaginary programs: program1 and program2. Our first program, program1, does some processing on an input file called input.txt and outputs results to the standard output stream and diagnostic messages to the standard error stream. Our second program, program2, takes standard output from program1 as input and processes it. program2 also outputs its own diagnostic messages to standard error, and results to standard output. The tricky part is that we now have two processes outputting to both standard error and standard output. Luckily, we can can combine pipes and redirects easily:
 
-```
+```bat
 $ program1 input.txt 2> program1.stderr | \
   program2 2> program2.stderr > results.txt
 ```
 
 Occasionally, we need to redirect a standard error stream to standard output. For example, suppose we wanted to use grep to search for “error” in both the standard output and standard error streams of program1.
 
-```
+```bat
 $ program1 2>&1 | grep "error"
 ```
 
@@ -299,7 +299,7 @@ $ program1 2>&1 | grep "error"
 
 As mentioned earlier, pipes prevent unnecessary disk writing and reading operations by connecting the standard output of one process to the standard input of another. However, we do occasionally need to write intermediate files to disk in Unix pipelines. These intermediate files can be useful when  debugging a pipeline or when you wish to store intermediate files for steps that take a long time to complete.
 
-```
+```bat
 $ program1 input.txt | tee intermediate-file.txt | program2 > results.txt
 ```
 
@@ -313,28 +313,27 @@ When we type a command in the shell and press Enter, we lose access to that shel
 
 We can tell the Unix shell to run a program in the background by appending an ampersand (&) to the end of our command. For example:
 
-```
+```bat
 $ program1 input.txt > results.txt &
 [1] 26577
 ```
 
 We also can check what processes we have running in the background with jobs:
 
-```
+```bat
 $ jobs
 [1]+ Running program1 input.txt > results.txt
 ```
 
 To bring a background process into the foreground again, we can use fg (for foreground). fg will bring the most recent process to the foreground. If you have many processes running in the background, they will all appear in the list output by the program jobs. To return a specific background job to the foreground, use fg %num where num is its number in the job list.
 
-```
-$ fg
-program1 input.txt > results.txt
+```bat
+$ fg program1 input.txt > results.txt
 ```
 
 It’s also possible to place a process already running in the foreground into the background. To do this, we first need to suspend the process, and then use the bg command to run it in the background.
 
-```
+```bat
 $ program1 input.txt > results.txt # forgot to append ampersand
 $ # enter control-z
 [1]+ Stopped program1 input.txt > results.txt
@@ -357,7 +356,7 @@ which indicates whether a program terminated without a problem or with an error.
 
 The exit status isn’t printed to the terminal, but your shell will set its value to a variable in your shell (aptly named a shell variable) named $?. We can use the echo command to look at this variable’s value after running a command:
 
-```
+```bat
 $ program1 input.txt > results.txt
 $ echo $?
 0
@@ -367,14 +366,14 @@ Exit statuses are incredibly useful because they allow us to programmatically ch
 
 It’s best to see these operators in an example. Suppose we wanted to run program1, have it write its output to file, and then have program2 read this output. To avoid the problem of program2 reading a file that’s not complete because program1 terminated with an error, we want to start program2 only after program1 returns a zero (successful) exit code. The shell operator && executes subsequent commands only if previous commands have completed with a nonzero exit status:
 
-```
+```bat
 $ program1 input.txt > intermediate-results.txt && \
 program2 intermediate-results.txt > results.txt
 ```
 
 Using the || operator, we can have the shell execute a command only if the previous command has failed (exited with a nonzero status). This is useful for warning messages:
 
-```
+```bat
 $ program1 input.txt > intermediate-results.txt || \
 echo "warning: an error occurred"
 ```
@@ -386,7 +385,7 @@ Unix users like to have the Unix shell do work for them — this is why shell ex
 We use command substitution to run the date program and replace
 this command with its output (the string). This is easier to understand through a simpler example:
 
-```
+```bat
 $ grep -c '^>' input.fasta
 416
 $ echo "There are $(grep -c '^>' input.fasta) entries in my FASTA file."
@@ -395,14 +394,14 @@ There are 416 entries in my FASTA file.
 
 Using this command substitution approach, we can easily create dated directories using the command date +%F, where the argument +%F simply tells the date program to output the date in a particular format.
 
-```
+```bat
 $ mkdir results-$(date +%F)
 $ ls results-2018-04-04
 ```
 
 Early Unix users were a clever (or lazy) bunch and devised a tool for storing repeated command combinations: alias. Below we have some examples:
 
-```
+```bat
 alias mkpr="mkdir -p {data/seqs,scripts,analysis}"
 
 alias today="date +%F"
@@ -432,7 +431,7 @@ Two common command-line programs for downloading data from the Web are wget and 
 
 wget is useful for quickly downloading a file from the command line—for example, human chromosome 22 from the GRCh37 (also known as hg19) assembly version:
 
-```
+```bat
 $ wget http://hgdownload.soe.ucsc.edu/goldenPath/hg19/chromosomes/chr22.fa.gz
 --2013-06-30 00:15:45-- http://[...]/goldenPath/hg19/chromosomes/chr22.fa.gz
 Resolving hgdownload.soe.ucsc.edu... 128.114.119.163
@@ -446,7 +445,7 @@ Saving to: ‘chr22.fa.gz’
 
 wget can handle both http and ftp links. One of wget’s strengths is that it can download data recursively. When run with the recursive option (--recursive or -r), wget will also follow and download the pages linked to, and even follow and download links on these pages, and so forth. An exemple is provided below:
 
-```
+```bat
 $ wget --accept "*.gtf" --no-directories --recursive --no-parent http://genomics.someuniversity.edu/labsite/annotation.html
 ```
 
@@ -455,7 +454,7 @@ $ wget --accept "*.gtf" --no-directories --recursive --no-parent http://genomics
 curl serves a slightly different purpose than wget. wget is great for downloading files via HTTP or FTP and scraping data from a web page using its recursive option. curl behaves similarly, although by default writes the file to standard output. To download
 chromosome 22 as we did with wget, we’d use:
 
-```
+```bat
 $ curl http://hgdownload.soe.ucsc.edu/goldenPath/hg19/chromosomes/chr22.fa.gz > chr22.fa.gz
 ```
 
@@ -471,7 +470,7 @@ rsync’s basic syntax is rsync source destination, where source is the source o
 
 Let’s look at an example of how we can use rsync to copy over an entire directory to another machine. 
 
-```
+```bat
 $ rsync -avz -e ssh zea_mays/data/ vinceb@[...]:/home/deborah/zea_mays/data
 building file list ... done
 zmaysA_R1.fastq
@@ -487,7 +486,7 @@ total size is 8806085 speedup is 3.08
 Occasionally, we just need to quickly copy a single file over SSH—for tasks where Unix’s cp would be sufficient, but needs to work over an SSH connection. rsync would work, but it’s a bit overkill. Secure copy (scp) is perfect for this purpose. Secure
 copy works just like cp, except we need to specify both host and path (using the same user@host:/path/to/file notation as wget). For example, we could transfer a single GTF file to 192.168.237.42:/home/deborah/zea_mays/data/ using:
 
-```
+```bat
 $ scp Zea_mays.AGPv3.20.gtf \ 192.168.237.42:/home/deborah/zea_mays/data/
 ```
 
@@ -504,7 +503,7 @@ a server has precomputed checksums on a set of files.
 
 Let’s get acquainted with checksums using SHA-1.
 
-```
+```bat
 $ echo "bioinformatics is fun" | shasum
 f9b70d0d1b0a55263f1b012adab6abf572e3030b -
 $ echo "bioinformatic is fun" | shasum
@@ -513,21 +512,21 @@ e7f33eedcfdc9aef8a9b4fec07e58f0cf292aa67 -
 
 We can also use checksums with file input (note that the content of Csyrichta_TAGGACT_L008_R1_001.fastq is fake example data):
 
-```
+```bat
 $ shasum Csyrichta_TAGGACT_L008_R1_001.fastq
 fea7d7a582cdfb64915d486ca39da9ebf7ef1d83 Csyrichta_TAGGACT_L008_R1_001.fastq
 ```
 
 When downloading many files, it can get rather tedious to check each checksum individually. The program shasum has a convenient solution—it can create and validate against a file containing the checksums of files. We can create a SHA-1 checksum file for all FASTQ files in the data/ directory as follows:
 
-```
+```bat
 $ shasum data/*fastq > fastq_checksums.sha
 $ cat fastq_checksums.sha
 ```
 
 Then, we can use shasum’s check option (-c) to validate that these files match the original versions:
 
-```
+```bat
 $ shasum -c fastq_checksums.sha
 ```
 
@@ -537,7 +536,7 @@ While checksums are a great method to check if files are different, they don’t
 
 An example is:
 
-```
+```bat
 $ diff -u gene-1.bed gene-2.bed
 ```
 
@@ -556,13 +555,13 @@ The two most common compression systems used on Unix are gzip and bzip2. Both ha
 
 For example, suppose we have a program that removes low-quality bases from FASTQ files called trimmer (this is an imaginary program). Our trimmer program can handle gzipped input files natively, but writes uncompressed trimmed FASTQ results to standard output. Using gzip, we can compress trimmer’s output in place, before writing to the disk:
 
-```
+```bat
 $ trimmer in.fastq.gz | gzip > out.fastq.gz
 ```
 
 gzip also can compress files on disk in place.
 
-```
+```bat
 $ ls
 in.fastq
 $ gzip in.fastq
@@ -572,7 +571,7 @@ in.fastq.gz
 
 Similarly, we can decompress files in place with the command gunzip:
 
-```
+```bat
 $ gunzip in.fastq.gz
 $ ls
 in.fastq
@@ -580,7 +579,7 @@ in.fastq
 
 A nice feature of the gzip compression algorithm is that you can concatenate gzip compressed output directly to an existing gzip file, like below.
 
-```
+```bat
 $ ls
 in.fastq.gz in2.fastq
 $ gzip -c in2.fastq >> in.fastq.gz
@@ -590,19 +589,19 @@ $ gzip -c in2.fastq >> in.fastq.gz
 
 - Downloading data:
 
-```
+```bat
 wget ftp://ftp.ensembl.org/pub/release-74/fasta/mus_musculus/dna/Mus_musculus.GRCm38.74.dna.toplevel.fa.gz
 ```
 
 - Extracting the FASTA headers on this gzipped file:
 
-```
+```bat
 $ zgrep "^>" Mus_musculus.GRCm38.74.dna.toplevel.fa.gz | less
 ```
 
 - Creating checksum file and comparing them:
 
-```
+```bat
 $ wget ftp://ftp.ensembl.org/pub/release-74/fasta/mus_musculus/dna/CHECKSUMS
 $ sum Mus_musculus.GRCm38.74.dna.toplevel.fa.gz
 53504 793314
@@ -610,21 +609,21 @@ $ sum Mus_musculus.GRCm38.74.dna.toplevel.fa.gz
 
 - Calculating the SHA-1 sum using shasum:
 
-```
+```bat
 $ shasum Mus_musculus.GRCm38.74.dna.toplevel.fa.gz
 01c868e22a981[...]c2154c20ae7899c5f Mus_musculus.GRCm38.74.dna.toplevel.fa.gz
 ```
 
 - Downloading an accompanying GTF from Ensembl and the CHECKSUMS file for this directory:
 
-```
+```bat
 $ wget ftp://ftp.ensembl.org/pub/release-74/gtf/mus_musculus/Mus_musculus.GRCm38.74.gtf.gz
 $ wget ftp://ftp.ensembl.org/pub/release-74/gtf/mus_musculus/CHECKSUMS
 ```
 
 - Ensuring that our checksums match those in the CHECKSUMS file:
 
-```
+```bat
 $ sum Mus_musculus.GRCm38.74.gtf.gz
 00985 15074
 $ shasum cf5bb5f8bda2803410bb04b708bff59cb575e379 Mus_musculus.GRCm38.74.gtf.gz
@@ -651,7 +650,7 @@ In this chapter, we’ll work with very simple genomic feature formats: BED (thr
 
 Taking a look at the top of a file:
 
-```
+```bat
 $ head Mus_musculus.GRCm38.75_chr1.bed
 1 3054233 3054733
 1 3054233 3054733
@@ -665,7 +664,7 @@ $ head Mus_musculus.GRCm38.75_chr1.bed
 
 We can also control how many lines we see with head through the -n argument:
 
-```
+```bat
 $ tail -n 3 Mus_musculus.GRCm38.75_chr1.bed
 1 195240910 195241007
 1 195240910 195241007
@@ -674,7 +673,7 @@ $ tail -n 3 Mus_musculus.GRCm38.75_chr1.bed
 
 Sometimes it’s useful to see both the beginning and end of a file—for example, if we have a sorted BED file and we want to see the positions of the first feature and last feature.
 
-```
+```bat
 $ (head -n 2; tail -n 2) < Mus_musculus.GRCm38.75_chr1.bed
 1 3054233 3054733
 1 3054233 3054733
@@ -684,7 +683,7 @@ $ (head -n 2; tail -n 2) < Mus_musculus.GRCm38.75_chr1.bed
 
 We can also search for strings and get the first occurence with head:
 
-```
+```bat
 $ grep 'gene_id "ENSMUSG00000025907"' Mus_musculus.GRCm38.75_chr1.gtf | head -n 1
 1 protein_coding gene 6206197 6276648 [...] gene_id "ENSMUSG00000025907" [...]
 ```
@@ -692,7 +691,7 @@ $ grep 'gene_id "ENSMUSG00000025907"' Mus_musculus.GRCm38.75_chr1.gtf | head -n 
 Under the hood, your shell sends a signal to other programs in the pipe called SIGPIPE—much like the signal that’s sent when you press Control-c (that signal is SIGINT). When building complex pipelines
 that process large amounts of data, this is extremely important. It means that in a pipeline like:
 
-```
+```bat
 $ grep "some_string" huge_file.txt | program1 | program2 | head -n 5
 ```
 
@@ -702,13 +701,13 @@ less is also a useful program for a inspecting files and the output of pipes. le
 
 less runs more like an application than a command: once we start less, it will stay open until we quit it. Let’s review an example—in this chapter’s directory in the book’s GitHub repository, there’s a file called contaminated.fastq. Let’s look at this with less:
 
-```
+```bat
 $ less contaminated.fastq
 ```
 
 less is also crucial when iteratively building up a pipeline—which is the best way to construct pipelines. Suppose we have an imaginary pipeline that involves three programs, step1, step2, and step3. Our finished pipeline will look like ```step1 input.txt | step2 | step3 > output.txt```. However, we want to build this up in pieces, running step1 input.txt first and checking its output, then adding in step3 and checking that output, and so forth. The natural way to do this is with less:
 
-```
+```bat
 $ step1 input.txt | less # inspect output in less
 $ step1 input.txt | step2 | less
 $ step1 input.txt | step2 | step3 | less
@@ -718,14 +717,14 @@ $ step1 input.txt | step2 | step3 | less
 
 In addition to peeking at a file with head, tail, or less, we may want other bits of summary information about a plain-text data file like the number of rows or columns. With plain-text data formats like tab-delimited and CSV files, the number of rows is usually the number of lines. We can retrieve this with the program wc (for word count):
 
-```
+```bat
 $ wc Mus_musculus.GRCm38.75_chr1.bed
 81226 243678 1698545 Mus_musculus.GRCm38.75_chr1.bed
 ```
 
 By default, wc outputs the number of words, lines, and characters of the supplied file. It can also work with many files:
 
-```
+```bat
 $ wc Mus_musculus.GRCm38.75_chr1.bed Mus_musculus.GRCm38.75_chr1.gtf
 81226 243678 1698545 Mus_musculus.GRCm38.75_chr1.bed
 81231 2385570 26607149 Mus_musculus.GRCm38.75_chr1.gtf
@@ -734,27 +733,27 @@ $ wc Mus_musculus.GRCm38.75_chr1.bed Mus_musculus.GRCm38.75_chr1.gtf
 
 Often, we only care about the number of lines. We can use option -l to just return the number of lines:
 
-```
+```bat
 $ wc -l Mus_musculus.GRCm38.75_chr1.bed
 81226 Mus_musculus.GRCm38.75_chr1.bed
 ```
 
 You might have noticed a discrepancy between the BED file and the GTF file for this chromosome 1 mouse annotation. To inspect this, we can use head:
 
-```
+```bat
 $ head -n 5 Mus_musculus.GRCm38.75_chr1.gtf
 ```
 
 Another bit of information we usually want about a file is its size. The easiest way to do this is with our old Unix friend, ls, with the -l option:
 
-```
+```bat
 $ ls -l Mus_musculus.GRCm38.75_chr1.bed
 -rw-r--r-- 1 vinceb staff 1698545 Jul 14 22:40 Mus_musculus.GRCm38.75_chr1.bed
 ```
 
 There’s one other bit of information we often want about a file: how many columns it contains. Let’s use an awk one-liner to return how many fields a file contains:
 
-```
+```bat
 $ awk -F "\t" '{print NF; exit}' Mus_musculus.GRCm38.75_chr1.bed
 3
 ```
@@ -763,7 +762,7 @@ awk was designed for tabular plain-text data processing, and consequently has a 
 
 To see how many columns of data there are, we need to first chop off the comments and then pass the results to our awk one-liner. One way to do this is with a tail trick we saw earlier:
 
-```
+```bat
 $ tail -n +5 Mus_musculus.GRCm38.75_chr1.gtf | head -n 1
 #!genebuild-last-updated 2013-09
 $ tail -n +6 Mus_musculus.GRCm38.75_chr1.gtf | head
@@ -774,7 +773,7 @@ $ tail -n +6 Mus_musculus.GRCm38.75_chr1.gtf | awk -F "\t" '{print NF; exit}'
 
 Otherwise, using the program grep (which we’ll talk more about in, we can easily exclude lines that begin with “#”:
 
-```
+```bat
 $ grep -v "^#" Mus_musculus.GRCm38.75_chr1.gtf | head -n 3
 1 pseudogene gene 3054233 3054733 . + . [...]
 1 unprocessed_pseudogene transcript 3054233 3054733 . + . [...]
@@ -786,7 +785,7 @@ $ grep -v "^#" Mus_musculus.GRCm38.75_chr1.gtf | head -n 3
 When working with plain-text tabular data formats like tab-delimited and CSV files, we often need to extract specific columns from the original file or stream. For example, suppose we wanted to extract only the start positions (the second column) of the
 Mus_musculus.GRCm38.75_chr1.bed file. The simplest way to do this is with cut.
 
-```
+```bat
 $ cut -f 2 Mus_musculus.GRCm38.75_chr1.bed | head -n 3
 3054233
 3054233
@@ -795,7 +794,7 @@ $ cut -f 2 Mus_musculus.GRCm38.75_chr1.bed | head -n 3
 
 Using cut, we can convert our GTF for Mus_musculus.GRCm38.75_chr1.gtf to a three-column tab-delimited file of genomic ranges (e.g., chromosome, start, and end position). We’ll chop off the metadata rows using the grep command covered earlier, and then use cut to extract the first, fourth, and fifth columns (chromosome, start, end):
 
-```
+```bat
 $ grep -v "^#" Mus_musculus.GRCm38.75_chr1.gtf | cut -f1,4,5 | head -n 3
 1 3054233 3054733
 1 3054233 3054733
@@ -805,7 +804,7 @@ $ grep -v "^#" Mus_musculus.GRCm38.75_chr1.gtf | cut -f1,4,5 > test.txt
 
 cut also allows us to specify the column delimiter character. So, if we were to come across a CSV file containing chromosome names, start positions, and end positions, we could select columns from it, too:
 
-```
+```bat
 $ head -n 3 Mus_musculus.GRCm38.75_chr1_bed.csv
 1,3054233,3054733
 1,3054233,3054733
@@ -820,7 +819,7 @@ $ cut -d, -f2,3 Mus_musculus.GRCm38.75_chr1_bed.csv | head -n 3
 
 As you may have noticed when working with tab-delimited files, it’s not always easy to see which elements belong to a particular column. For example:
 
-```
+```bat
 $ grep -v "^#" Mus_musculus.GRCm38.75_chr1.gtf | cut -f1-8 | head -n3
 1 pseudogene gene 3054233 3054733 . + .
 1 unprocessed_pseudogene transcript 3054233 3054733 . + .
@@ -829,7 +828,7 @@ $ grep -v "^#" Mus_musculus.GRCm38.75_chr1.gtf | cut -f1-8 | head -n3
 
 column -t produces neat columns that are much easier to read:
 
-```
+```bat
 $ grep -v "^#" Mus_musculus.GRCm38.75_chr1.gtf | cut -f 1-8 | column -t
 | head -n 3
 1 pseudogene gene 3054233 3054733 . + .
@@ -846,7 +845,7 @@ grep is one of the most powerful Unix data tools. First, it’s important to men
 
 grep requires two arguments: the pattern (the string or basic regular expression you want to search for), and the file (or files) to search for it in. For example, if we want to find a gene in a file, we can do the following:
 
-```
+```bat
 $ grep "Olfr418-ps1" Mus_musculus.GRCm38.75_chr1_genes.txt
 ENSMUSG00000049605 Olfr418-ps1
 ```
@@ -857,14 +856,14 @@ For example, suppose you wanted a list of all
 genes that contain “Olfr,” except “Olfr1413.” Using -v and chaining together to calls to
 grep with pipes, we could use:
 
-```
+```bat
 $ grep Olfr Mus_musculus.GRCm38.75_chr1_genes.txt | grep -v Olfr1413
 ```
 
 But this command would also exclude genes like
 “Olfr1413a” and “Olfr14130.” “Olfr14130.” But we can get around this by using -w, which matches entire words (surrounded by whitespace). Let’s look at how this works with a simpler toy example:
 
-```
+```bat
 $ cat example.txt
 bio
 bioinfo
@@ -881,7 +880,7 @@ computational biology
 
 grep’s default output often doesn’t give us enough context of a match when we need to inspect results by eye; only the matching line is printed to standard output. There are three useful options to get around this context before (-B), context: after (-A), and context before and after (-C). Each of these arguments takes how many lines of context to provide:
 
-```
+```bat
 $ grep -B1 "AGATCGG" contam.fastq | head -n 6
 @DJB775P1:248:D0MDGACXX:7:1202:12362:49613
 TGCTTACTCTGCGTTGATACCACTGCTTAGATCGGAAGAGCACACGTCTGAA
@@ -901,7 +900,7 @@ CTCTGCGTTGATACCACTGCTTACTCTGCGTTGATACCACTGCTTAGATCGG
 For example, if we wanted to find the Ensembl gene identifiers for both “Olfr1413” and “Olfr1411,” we
 could use:
 
-```
+```bat
 $ grep "Olfr141[13]" Mus_musculus.GRCm38.75_chr1_genes.txt
 ENSMUSG00000058904 Olfr1413
 ENSMUSG00000062497 Olfr1411
@@ -909,21 +908,21 @@ ENSMUSG00000062497 Olfr1411
 
 grep has an option to count how many lines match a pattern: -c. For example, suppose we wanted a quick look at how many genes start with “Olfr”:
 
-```
+```bat
 $ grep -c "\tOlfr" Mus_musculus.GRCm38.75_chr1_genes.txt
 27
 ```
 
 For example, suppose we wanted to know how many small nuclear RNAs are in our Mus_musculus.GRCm38.75_chr1.gtf file.
 
-```
+```bat
 $ grep -c 'gene_biotype "snRNA"' Mus_musculus.GRCm38.75_chr1.gtf
 315
 ```
 
 Suppose we wanted to extract all values of the “gene_id” field from the last column of our Mus_musculus.GRCm38.75_chr1.gtf file. This is easy with -o:
 
-```
+```bat
 $ grep -E -o 'gene_id "\w+"' Mus_musculus.GRCm38.75_chr1.gtf | head -n 5
 gene_id "ENSMUSG00000090025"
 gene_id "ENSMUSG00000090025"
@@ -933,7 +932,8 @@ gene_id "ENSMUSG00000064842"
 ```
 
 #### Cleaning a set of gene names with Unix data tools
-```
+
+```bat
 grep -E -o 'gene_id "(\w+)"' Mus_musculus.GRCm38.75_chr1.gtf | \
 cut -f2 -d" " | \
 sed 's/"//g' | \
@@ -945,7 +945,7 @@ uniq > mm_gene_id.txt
 
 Very often we need to work with sorted plain-text data in bioinformatics. First, like cut, sort is designed to work with plain-text data with columns. Running sort without any arguments simply sorts a file alphanumerically by line:
 
-```
+```bat
 $ cat example.bed
 $ sort example.bed
 ```
@@ -954,7 +954,7 @@ However, using sort’s defaults of sorting alphanumerically by line doesn’t h
 
 sort has a simple syntax to do this. Let’s look at how we’d sort example.bed by chromosome (first column), and start position (second column):
 
-```
+```bat
 sort -k1,1 -k2,2n example.bed
 chr1 9 28
 chr1 10 19
@@ -968,20 +968,20 @@ chr3 16 27
 
 We could then redirect the standard output stream of sort to a file:
 
-```
+```bat
 $ sort -k1,1 -k2,2n example.bed > example_sorted.bed
 ```
 
 Another example: 
 
-```
+```bat
 $ sort -k1,1 -k4,4n Mus_musculus.GRCm38.75_chr1_random.gtf > \
 Mus_musculus.GRCm38.75_chr1_sorted.gtf
 ```
 
 We can check if a file is sorted according to our -k arguments using -c:
 
-```
+```bat
 $ sort -k1,1 -k2,2n -c example_sorted.bed
 $ echo $?
 0
@@ -993,7 +993,7 @@ $ echo $?
 
 It’s also possible to sort in reverse order with the -r argument:
 
-```
+```bat
 $ sort -k1,1 -k2,2n -r example.bed
 chr3 11 28
 chr3 16 27
@@ -1007,7 +1007,7 @@ chr1 40 49
 
 If you’d like to only reverse the sorting order of a single column, you can append r on that column’s -k argument:
 
-```
+```bat
 $ sort -k1,1 -k2,2nr example.bed
 chr1 40 49
 chr1 32 47
@@ -1021,7 +1021,7 @@ chr3 11 28
 
 There are a few other useful sorting options to discuss, but these are available for GNU sort only (not the BSD version as found on OS X). The first is -V, which is a clever alphanumeric sorting routine that understands numbers inside strings.
 
-```
+```bat
 $ sort -k1,1V -k2,2n example2.bed
 chr1 34 49
 chr10 30 42
@@ -1035,7 +1035,7 @@ chr22 32 46
 
 Another option (only available in GNU sort) is to run sort with the --parallel option. For example, to use four cores to sort Mus_musculus.GRCm38.75_chr1_random.gtf:
 
-```
+```bat
 $ sort -k1,1 -k4,4n --parallel 4 Mus_musculus.GRCm38.75_chr1_random.gtf
 ```
 
@@ -1045,7 +1045,7 @@ Unix’s uniq takes lines from a file or standard input stream, and outputs all 
 
 Let’s first see an example of its behavior:
 
-```
+```bat
 $ cat letters.txt
 A
 A
@@ -1065,7 +1065,7 @@ C
 
 As you can see, uniq does not return the unique values letters.txt—it only removes consecutive duplicate lines (keeping one). If instead we did want to find all unique lines in a file, we would first sort all lines using sort so that all identical lines are grouped next to each other, and then run uniq. For example:
 
-```
+```bat
 $ sort letters.txt | uniq
 A
 B
@@ -1074,7 +1074,7 @@ C
 
 uniq also has a tremendously useful option that’s used very often in command-line data processing: -c. This option shows the counts of occurrences next to the unique lines. For example:
 
-```
+```bat
 $ uniq -c letters.txt
 2 A
 1 B
@@ -1089,7 +1089,7 @@ $ sort letters.txt | uniq -c
 
 Both sort | uniq and sort | uniq -c are frequently used shell idioms in bioinformatics and worth memorizing. Combined with other Unix tools like grep and cut, sort and uniq can be used to summarize columns of tabular data:
 
-```
+```bat
 $ grep -v "^#" Mus_musculus.GRCm38.75_chr1.gtf | cut -f3 | sort | uniq -c
 25901 CDS
 7588 UTR
@@ -1102,7 +1102,7 @@ $ grep -v "^#" Mus_musculus.GRCm38.75_chr1.gtf | cut -f3 | sort | uniq -c
 
 If we wanted these counts in order from most frequent to least, we could pipe these results to sort -rn:
 
-```
+```bat
 $ grep -v "^#" Mus_musculus.GRCm38.75_chr1.gtf | cut -f3 | sort | uniq -c | \
 sort -rn
 36128 exon
@@ -1116,7 +1116,7 @@ sort -rn
 
 If you want to see the number of features belonging to a particular gene identifier:
 
-```
+```bat
 $ grep "ENSMUSG00000033793" Mus_musculus.GRCm38.75_chr1.gtf | cut -f3 | sort \
 | uniq -c
 13 CDS
@@ -1130,7 +1130,7 @@ $ grep "ENSMUSG00000033793" Mus_musculus.GRCm38.75_chr1.gtf | cut -f3 | sort \
 
 uniq can also be used to check for duplicates with the -d option. With the -d option, uniq outputs duplicated lines only.
 
-```
+```bat
 $ uniq -d mm_gene_names.txt
 # no output
 $ uniq -d mm_gene_names.txt | wc -l
@@ -1139,7 +1139,7 @@ $ uniq -d mm_gene_names.txt | wc -l
 
 A file with duplicates, like the test.bed file, has multiple lines returned:
 
-```
+```bat
 $ uniq -d test.bed | wc -l
 22925
 ```
@@ -1148,7 +1148,7 @@ $ uniq -d test.bed | wc -l
 
 The Unix tool join is used to join different files together by a common column. This is easiest to understand with simple test data. Let’s use our example.bed BED file, and example_lengths.txt, a file containing the same chromosomes as example.bed with their lengths. Both files look like this:
 
-```
+```bat
 $ cat example.bed
 chr1 26 39
 chr1 32 47
@@ -1168,14 +1168,14 @@ Our goal is to append the chromosome length alongside each feature (note that th
 
 To append the chromosome lengths to example.bed, we first need to sort both files by the column to be joined on.
 
-```
+```bat
 $ sort -k1,1 example.bed > example_sorted.bed
 $ sort -c -k1,1 example_lengths.txt # verifies is already sorted
 ```
 
 Then, to sort them, we can use:
 
-```
+```bat
 $ join -1 1 -2 1 example_sorted.bed example_lengths.txt > example_with_lengths.txt
 $ cat example_with_lengths.txt
 chr1 10 19 58352
@@ -1191,7 +1191,8 @@ chr3 16 27 24859
 But look what happens if our second file, example_lengths.txt, is truncated such
 that it doesn’t have the lengths for chr3:
 
-```$ head -n2 example_lengths.txt > example_lengths_alt.txt # truncate file
+```bat
+$ head -n2 example_lengths.txt > example_lengths_alt.txt # truncate file
 $ join -1 1 -2 1 example_sorted.bed example_lengths_alt.txt
 chr1 10 19 58352
 chr1 26 39 58352
@@ -1205,7 +1206,7 @@ $ join -1 1 -2 1 example_sorted.bed example_lengths_alt.txt | wc -l
 
 GNU join implements the -a option to include unpairable lines—ones that do not have an entry in either file.
 
-```
+```bat
 $ join -1 1 -2 1 -a 1 example_sorted.bed example_lengths_alt.txt # GNU join only
 chr1 10 19 58352
 chr1 26 39 58352
@@ -1225,7 +1226,7 @@ First, Awk processes input data a record at a time. Each record is composed of f
 
 First, we can simply mimic cat by omitting a pattern and printing an entire record with the variable $0:
 
-```
+```bat
 $ awk '{ print $0 }' example.bed
 chr1 26 39
 chr1 32 47
@@ -1239,7 +1240,7 @@ chr1 10 19
 
 Awk supports arithmetic with the standard operators +, -, *, /, % (remainder), and ^ (exponentiation). We can subtract within a pattern to calculate the length of a feature, and filter on that expression:
 
-```
+```bat
 $ awk '$3 - $2 > 18' example.bed
 chr1 9 28
 chr2 35 54
@@ -1247,7 +1248,7 @@ chr2 35 54
 
 We can also chain patterns, by using logical operators && (AND), || (OR), and ! (NOT). For example, if we wanted all lines on chromosome 1 with a length greater than 10:
 
-```
+```bat
 $ awk '$1 ~ /chr1/ && $3 - $2 > 10' example.bed
 chr1 26 39
 chr1 32 47
@@ -1256,14 +1257,14 @@ chr1 9 28
 
 We would have to take the sum feature lengths, and then divide by the total number of records. We can do this with:
 
-```
+```bat
 $ awk 'BEGIN{ s = 0 }; { s += ($3-$2) }; END{ print "mean: " s/NR };' example.bed
 mean: 14
 ```
 
 We can use NR to extract ranges of lines, too; for example, if we wanted to extract all lines between 3 and 5 (inclusive):
 
-```
+```bat
 $ awk 'NR >= 3 && NR <= 5' example.bed
 chr3 11 28
 chr1 40 49
@@ -1271,7 +1272,7 @@ chr3 16 27
 ```
 We could generate a three-column BED file from Mus_musculus.GRCm38.75_chr1.gtf as follows:
 
-```
+```bat
 $ awk '!/^#/ { print $1 "\t" $4-1 "\t" $5 }' Mus_musculus.GRCm38.75_chr1.gtf | \
 head -n 3
 1 3054232 3054733
@@ -1282,7 +1283,7 @@ head -n 3
 Awk also has a very useful data structure known as an associative array. Associative arrays behave like Python’s dictionaries or hashes in other languages. We can create an associative array by simply assigning a value to a key. For example, suppose we
 wanted to count the number of features (third column belonging to the gene “Lypla1.” We could do this by incrementing their values in an associative array:
 
-```
+```bat
 $ awk '/Lypla1/ { feature[$3] += 1 }; \
 END { for (k in feature) \
 print k "\t" feature[k] }' Mus_musculus.GRCm38.75_chr1.gtf
@@ -1290,7 +1291,7 @@ print k "\t" feature[k] }' Mus_musculus.GRCm38.75_chr1.gtf
 
 It’s worth noting that there’s an entirely Unix way to count features of a particular gene: grep, cut, sort, and uniq -c:
 
-```
+```bat
 $ grep "Lypla1" Mus_musculus.GRCm38.75_chr1.gtf | cut -f 3 | sort | uniq -c
 56 CDS
 24 UTR
@@ -1308,13 +1309,13 @@ input formats and what variables these formats set:
 
 To install bioawk on Ubuntu we can follow this commands: https://silico-sciences.com/2015/12/install-bioawk-on-ubuntu/
 
-```
+```bat
 $ bioawk -c help
 ```
 
 Bioawk is also quite useful for processing FASTA/FASTQ files. For example, we could use it to turn a FASTQ file into a FASTA file:
 
-```
+```bat
 $ bioawk -c fastx '{print ">"$name"\n"$seq}' contam.fastq | head -n 4
 >DJB775P1:248:D0MDGACXX:7:1202:12362:49613
 TGCTTACTCTGCGTTGATACCACTGCTTAGATCGGAAGAGCACACGTCTGAA
@@ -1324,14 +1325,14 @@ CTCTGCGTTGATACCACTGCTTACTCTGCGTTGATACCACTGCTTAGATCGG
 
 Bioawk can also serve as a method of counting the number of FASTQ/FASTA entries:
 
-```
+```bat
 $ bioawk -c fastx 'END{print NR}' contam.fastq
 8
 ```
 
 Bioawk is also useful for creating a table of sequence lengths from a FASTA file. For example, to create a table of all chromosome lengths of the Mus musculus genome:
 
-```
+```bat
 $ bioawk -c fastx '{print $name,length($seq)}' \
 Mus_musculus.GRCm38.75.dna_rm.toplevel.fa.gz > mm_genome.txt
 $ head -n 4 mm_genome.txt
@@ -1345,7 +1346,7 @@ $ head -n 4 mm_genome.txt
 
 If we wanted to return all variants for which individuals ind_A and ind_B have identical genotypes (note that this assumes a fixed allele order like ref/alt or major/minor):
 
-```
+```bat
 $ bioawk -c hdr '$ind_A == $ind_B {print $id}' genotypes.txt
 S_001
 S_003
@@ -1366,7 +1367,7 @@ standard in. If we use command1 && command2, command2 will only run if command1 
 Subshells allow us to execute sequential com‐
 mands together in a separate shell process. This is useful primarily to group sequential commands together (such that their output is a single stream. This gives us a new way to construct clever one-liners and has practical uses in command-line data processing. Let’s look at a toy example first:
 
-```
+```bat
 $ echo "this command"; echo "that command" | sed 's/command/step/'
 this command
 that step
@@ -1377,7 +1378,7 @@ that step
 
 Consider the problem of sorting a GTF file with a metadata header. We can’t simply sort the entire file with sort, because this header could get shuffled in with rows of data. Instead, we want to sort everything except the header, but still include the header at the top of the final sorted file. We can solve this problem using a subshell to group sequential commands that print the header to standard out and sort all other lines by chromosome and start position, printing all lines to standard out after the header.
 
-```
+```bat
 $ (zgrep "^#" Mus_musculus.GRCm38.75_chr1.gtf.gz; \
 zgrep -v "^#" Mus_musculus.GRCm38.75_chr1.gtf.gz | \
 sort -k1,1 -k4,4n) | less
@@ -1386,7 +1387,7 @@ sort -k1,1 -k4,4n) | less
 Because we’ve used a subshell, all standard output from these sequential commands will be combined into a single stream, which here is piped to less. To write this stream to a file, we could redirect this stream to a file using something like > 
 Mus_musculus.GRCm38.75_chr1_sorted.gtf. But a better approach would be to use gzip to compress this stream before writing it to disk:
 
-```
+```bat
 $ (zgrep "^#" Mus_musculus.GRCm38.75_chr1.gtf.gz; \
 zgrep -v "^#" Mus_musculus.GRCm38.75_chr1.gtf.gz | \
 sort -k1,1 -k4,4n) | gzip > Mus_musculus.GRCm38.75_chr1_sorted.gtf.gz
@@ -1396,7 +1397,7 @@ sort -k1,1 -k4,4n) | gzip > Mus_musculus.GRCm38.75_chr1_sorted.gtf.gz
 
 Throughout this chapter, we’ve used pipes to connect command-line tools to build custom data-processing pipelines. However, some programs won’t interface with the Unix pipes we’ve come to love and depend on. For example, certain bioinformatics tools read in multiple input files and write to multiple output files:
 
-```
+```bat
 $ processing_tool --in1 in1.fq --in2 in2.fq --out1 out2.fq --out2.fq
 ```
 
@@ -1404,7 +1405,7 @@ In this case, the imaginary program processing_tool requires two separate input 
 
 A named pipe, also known as a FIFO (First In First Out, a concept in computer science), is a special sort of file. Regular pipes are anonymous—they don’t have a name, and only persist while both processes are running. Named pipes behave like files, and are persistent on your filesystem. We can create a named pipe with the program mkfifo:
 
-```
+```bat
 $ mkfifo fqin
 $ ls -l fqin
 prw-r--r-- 1 vinceb staff 0 Aug 5 22:50 fqin
@@ -1412,7 +1413,7 @@ prw-r--r-- 1 vinceb staff 0 Aug 5 22:50 fqin
 
 As a toy example, we can simulate this by using echo to redirect some text into a named pipe (running it in the background, so we can have our prompt back), and then cat to read the data back out:
 
-```
+```bat
 $ echo "hello, named pipes" > fqin &
 [1] 16430
 $ cat fqin
@@ -1428,7 +1429,7 @@ anonymous named pipes. These allow you to invoke a process, and have its standar
 
 If we were to re-create the previous toy example with process substitution, it would look as follows:
 
-```
+```bat
 $ cat <(echo "hello, process substitution")
 hello, process substitution
 ```
@@ -1468,7 +1469,7 @@ Despite the convenience that comes with representing and working with genomic ra
 
 - **0-based coordinate system, with half-closed, half-open intervals**: the first base of a sequence is position 0 and the last base’s position is the length of the sequence - 1 (exclude the last position). Example: [1, 5). In fact, Pytho strings work like this to:
 
-```
+```python
 $ python3
 >>> "CTTACTTCGAAGGCTG"[1:5]
 'TTAC'
@@ -1478,7 +1479,7 @@ $ python3
 
 R uses 1-based indexing for its vectors and strings, and extracting a portion of a string with substr() uses closed intervals:
 
-```
+```python
 > substr("CTTACTTCGAAGGCTG", 2, 5)
 [1] "TTAC"
 ```
@@ -1518,7 +1519,7 @@ FASTA files are composed of sequence entries, each containing two parts: a descr
 
 The egfr_flank.fasta file in this chapter’s GitHub directory is an example FASTA file:
 
-```
+```bat
 $ head -10 egfr_flank.fasta
 >ENSMUSG00000020122|ENSMUST00000138518
 CCCTCCTATCATGCTGTCAGTGTATCTCTAAATAGCACTCTCAACCCCCGTGAACTTGGT
@@ -1581,21 +1582,21 @@ We can use the fact that the number of quality score characters must be equal to
 
 #### Counting FASTA/FASTQ Entries
 
-```
+```bat
 $ grep -c "^>" egfr_flank.fasta
 5
 ```
 
 This approach will fail on FASTQ, because it counts que @ quality character too. 
 
-```
+```bat
 $ grep -c "^@" untreated1_chr4.fq
 208779
 ```
 
 If you’re absolutely positive your FASTQ file uses four lines per sequence entry, you can estimate the number of sequences by estimating the number of lines with wc -l and dividing by four. If you’re unsure if some of your FASTQ entries wrap across many lines, a more robust way to count sequences is with bioawk:
 
-```
+```bat
 $ bioawk -cfastx 'END{print NR}' untreated1_chr4.fq
 204355
 ```
@@ -1620,7 +1621,7 @@ Remember, ASCII characters are just represented as integers between 0 and 127 un
 
 All programming languages have functions to convert from a character to its decimal ASCII representation, and from ASCII decimal to character. In Python, these are the functions ord() and chr(), respectively. Let’s use ord() in Python’s interactive interpreter to convert the quality characters to a list of ASCII decimal representations:
 
-```
+```python
 >>> qual = "JJJJJJJJJJJJGJJJJJIIJJJJJIGJJJJJIJJJJJJJIJIJJJJHHHHHFFFDFCCC"
 >>> [ord(b) for b in qual]
 [74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 71, 74, 74, 74, 74, 74, 73,
@@ -1642,7 +1643,7 @@ Below, we can see FASTQ quality schemes:
 First, we need to subtract an offset to convert this Sanger quality score to a PHRED quality score. PHRED was an early base caller written by Phil Green, used for fluorescence trace data written by Phil Green. Looking at the table above, notice that the Sanger
 format’s offset is 33, so we subtract 33 from each quality score:
 
-```
+```python
 >>> phred = [ord(b)-33 for b in qual]
 >>> phred
 [41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 38, 41, 41, 41, 41, 41, 40,
@@ -1653,7 +1654,7 @@ format’s offset is 33, so we subtract 33 from each quality score:
 
 Using the formula to convert quality score to the estimated probability the base is correct:
 
-```
+```python
 >>> [10**(-q/10) for q in phred]
 [1e-05, 1e-05, 1e-05, 1e-05, 1e-05, 1e-05, 1e-05, 1e-05, 1e-05, 1e-05, 1e-05,
 1e-05, 0.0001, 1e-05, 1e-05, 1e-05, 1e-05, 1e-05, 0.0001, 0.0001, 1e-05,
@@ -1669,14 +1670,14 @@ Our Python list of base accuracies is useful as a learning tool to see how to co
 
 Let’s first install all the necessary programs for this example. First, install qrqc in R with:
 
-```
+```r
 > library(BiocInstaller)
 > biocLite('qrqc')
 ```
 
 Next, let’s install two programs that will allow us to trim low-quality bases: **sickle** and **seqtk**. seqtk is a general-purpose sequence toolkit written by Heng Li that contains a subcommand for trimming low-quality bases off the end of sequences.
 
-```
+```bat
 sudo apt-get install sickle
 sudo apt-get install seqtk
 ```
@@ -1684,7 +1685,7 @@ sudo apt-get install seqtk
 After getting these programs installed, let’s trim the untreated1_chr4.fq FASTQ file in this chapter’s directory in the GitHub repository. This FASTQ file was generated from the untreated1_chr4.bam BAM file in the pasillaBamSubset Bioconductor package. To keep
 things simple, we’ll use each program’s default settings. Starting with sickle:
 
-```
+```bat
 $ sickle se -f untreated1_chr4.fq -t sanger -o untreated1_chr4_sickle.fq
 FastQ records kept: 203121
 FastQ records discarded: 1234
@@ -1711,7 +1712,7 @@ We’ll use the Python implementation of readfq, readfq.py to read FASTQ files a
 
 This version takes input through standard in, so after saving this file and adding execute permissions with **chmod +x nuccount.py**, we could run it with:
 
-```
+```bat
 $ cat contam.fastq | ./nuccount.py
 A 103
 C 110
@@ -1747,7 +1748,7 @@ Before learning to work with SAM/BAM, we need to understand the structure of the
 
 Files in the SAM format consist of a header section and an alignment section. Because SAM files are plain text (unlike their binary counterpart, BAM), we can take a peek at a few lines of the header with head:
 
-```
+```bat
 $ head -n 10 celegans.sam
 @SQ SN:I LN:15072434
 @SQ SN:II LN:15279421
@@ -1765,7 +1766,7 @@ The standard way of interacting with SAM/BAM files is through the SAMtools comma
 
 A universal way to look at an entire SAM/BAM header is with samtools view option -H:
 
-```
+```bat
 $ sudo apt-get install samtools
 $ samtools view -H celegans.sam
 @SQ SN:I LN:15072434
@@ -1786,7 +1787,7 @@ $ samtools view -H celegans.bam
 
 Of course, all our usual Unix tricks can be combined with samtools commands through piping results to other commands. For example, we could see all read groups with:
 
-```
+```bat
 $ samtools view -H celegans.bam | grep "^@RG"
 @RG ID:VB00023_L001 SM:celegans-01
 ```
@@ -1795,7 +1796,7 @@ $ samtools view -H celegans.bam | grep "^@RG"
 
 The alignment section contains read alignments (and usually includes reads that did not align, but this depends on the aligner and file). Each alignment entry is composed of 11 required fields (and optional fields after this).
 
-```
+```bat
 $ samtools view celegans.sam | tr '\t' '\n' | head -n 11
 I_2011868_2012306_0:0:0_0:0:0_2489
 83
@@ -1846,13 +1847,13 @@ In this section, we’ll learn about the Samtools suite of tools for manipulatin
 
 Many samtools subcommands such as sort, index, depth,and mpileup all require input files (or streams) to be in BAM format for efficiency, so we often need to convert between plain-text SAM and binary BAM formats. samtools view allows us to convert SAM to BAM with the -b option:
 
-```
+```bat
 $ samtools view -b celegans.sam > celegans_copy.bam
 ```
 
 Similarly, we can go from BAM to SAM:
 
-```
+```bat
 $ samtools view celegans.bam > celegans_copy.sam
 $ head -n 3 celegans_copy.sam
 I_2011868_2012306_0:0:0_0:0:0_2489 83 I 2012257 40 [...]
@@ -1862,7 +1863,7 @@ I_13330604_13331055_2:0:0_0:0:0_3dd5 83 I 13331006 60 [...]
 
 However, samtools view will not include the SAM header (see “The SAM Header” on page 356) by default. SAM files without headers cannot be turned back into BAM files:
 
-```
+```bat
 $ samtools view -b celegans_copy.sam > celegans_copy.bam
 [E::sam_parse1] missing SAM header
 [W::sam_read1] parse error at line 1
@@ -1871,7 +1872,7 @@ $ samtools view -b celegans_copy.sam > celegans_copy.bam
 
 Converting BAM to SAM loses information when we don’t include the header. We can include the header with -h:
 
-```
+```bat
 $ samtools view -h celegans.bam > celegans_copy.sam
 $ samtools view -b celegans_copy.sam > celegans_copy.bam #now we can convert back
 ```
@@ -1880,19 +1881,19 @@ $ samtools view -b celegans_copy.sam > celegans_copy.bam #now we can convert bac
 
 We sort alignments by their alignment position with samtools sort:
 
-```
+```bat
 $ samtools sort celegans_unsorted.bam celegans_sorted
 ```
 
 We can use the samtools sort option -m to increase the memory, and -@ to specify how many threads to use. For example:
 
-```
+```bat
 $ samtools sort -m 4G -@ 2 celegans_unsorted.bam celegans_sorted
 ```
 
 Often, we want to work with alignments within a particular region in the genome. For example, we may want to extract these reads using samtools view or only call SNPs within this region. Iterating through an entire BAM file just to work with a subset of reads at a position would be inefficient; consequently, BAM files can be indexed. The BAM file must be sorted first, and we cannot index SAM files. To index a position-sorted BAM file, we simply use:
 
-```
+```bat
 $ samtools index celegans_sorted.bam
 ```
 
@@ -1929,7 +1930,7 @@ Most Bash scripts in bioinformatics are simply commands organized into a rerunna
 
 By convention, Bash scripts have the extension .sh. You can create them in your favorite text editor. Anytime you write a Bash script, you should use the following Bash script header, which sets some Bash options that lead to more robust scripts:
 
-```
+```shell
 #!/bin/bash
 set -e
 set -u
@@ -1942,7 +1943,7 @@ These three options are the first layer of protection against Bash scripts with 
 
 While we can run any script (as long as it has read permissions) with bash script.sh, calling the script as an executable requires that it have executable permissions. We can set these using:
 
-```
+```bat
 $ chmod u+x script.sh
 ```
 
@@ -1954,17 +1955,554 @@ Bash variables play an extremely important role in robust, reproducible Bash scr
 
 Unlike other programming languages, Bash’s variables don’t have data types. It’s helpful to think of Bash’s variables as strings (but that may behave differently depending on context). We can create a variable and assign it a value with (note that spaces matter when setting Bash variables—do not use spaces around the equals sign!):
 
-```
+```shell
 results_dir="results/"
 ```
 
 To access a variable’s value, we use a dollar sign in front of the variable’s name (e.g., $results_dir). You can experiment with this in a Bash script, or directly on the command line:
 
-```
+```shell
 $ results_dir="results/"
 $ echo $results_dir
 results/
 ```
 
-(399 to 423)
+As mentioned in the previous section, you should always set set -u to force a Bash script to exit if a variable is not set.
 
+Even though accessing a variable’s value using the dollar sign syntax works, it has one disadvantage: in some cases it’s not clear where a variable name ends and where an adjacent string begins. For example, suppose a section of your Bash script created a directory for a sample’s alignment data, called \<sample>\_aln/, where \<sample>\ is replaced by the sample’s name. This would look like:
+
+```shell
+sample="CNTRL01A"
+mkdir $sample_aln/
+```
+
+Although the intention of this code block was to create a directory called CNTRL01A_aln/, this would actually fail, because Bash will try to retrieve the value of a variable named $sample_aln. To prevent this, wrap the variable name in braces:
+
+```shell
+sample="CNTRL01A"
+mkdir ${sample}_aln/
+```
+
+Now, a directory named CNTRL01A_aln/ will be created. While this solves our immediate problem of Bash interpreting sample_aln as the variable name, there’s one more step we should take to make this more robust: quoting variables. This prevents
+commands from interpreting any spaces or other special characters that the variable may contain. Our final command would look as follows:
+
+```shell
+sample="CNTRL01A"
+mkdir "${sample}_aln/"
+```
+
+##### Command-line arguments
+
+Let’s now look at how Bash handles command-line arguments (which are assigned to the value $1, $2, $3, etc.). The variable $0 stores the name of the script. We can see this ourselves with a simple example script (command_line_args.sh):
+
+Running this file prints arguments assigned to $0, $1, $2, and $3:
+
+```bat
+$ ./command_line_args.sh one two three
+script name: command_line_args.sh
+first arg: one
+second arg: two
+third arg: three
+```
+
+Bash assigns the number of command-line arguments to the variable $# (this does not count the script name, $0, as an argument). This is useful for user-friendly messages, like when we insert the lines below:
+
+```shell
+if [ "$#" -lt 3 ] # are there less than 3 arguments?
+then
+    echo "error: too few arguments, you provided $#, 3 required"
+    echo "usage: script.sh arg1 arg2 arg3"
+    exit 1
+fi
+```
+
+Running this with too few arguments gives an error (and leads the process to exit with a nonzero exit status).
+
+```bat
+$ ./command_line_args.sh one two
+error: too few arguments, you provided 2, 3 required
+usage: script.sh arg1 arg2 arg3
+```
+
+It’s possible to have more complex options and argument parsing with the Unix tool getopt. If you find your script requires numerous or complicated
+options, it might be easier to use Python instead of Bash. Python’s argparse module is much easier to use than getopt.
+
+It's important to know that variables created in your Bash script will only be available for the duration of the Bash process running that script.
+
+#### Conditionals in a Bash Script: if Statements
+
+Like other scripting languages, Bash supports the standard if conditional statement. The basic syntax is:
+
+```shell
+if [commands]
+then
+    [if-statements]
+else
+    [else-statements]
+fi
+```
+
+Suppose we wanted to run a set of commands only if a file contains a certain string. Because grep returns 0 only if it matches a pattern in a file and 1 otherwise, we could use:
+
+```shell
+#!/bin/bash
+if grep "pattern" some_file.txt > /dev/null
+then
+    # commands to run if "pattern" is found
+    echo "found 'pattern' in 'some_file.txt"
+fi
+```
+
+The set of commands in an if condition can use all features of Unix we’ve mastered so far. For example, chaining commands with logical operators like && (logical AND) and || (logical OR):
+
+```shell
+#!/bin/bash
+if grep "pattern" file_1.txt > /dev/null &&
+    grep "pattern" file_2.txt > /dev/null
+then
+    echo "found 'pattern' in 'file_1.txt' and in 'file_2.txt'"
+fi
+```
+
+Finally, it’s possible to use pipelines in if condition statements. Note, however, that the behavior depends on set -o pipefail. If pipefail is set, any nonzero exit status in a pipe in your condition statement will cause execution to continue on, skipping the if-statements section (and going on to the else block if it exists). However, if pipefail is not set, only the exit status of the last command is considered.
+
+Bash can’t rely on familiar syntax such as > for “greater than,” as this is used for redirection: instead, test has its own syntax. You can get a sense of how test works by playing with it directly on the command line (using ; echo "$?" to print the exit status):
+
+```bat
+$ test "ATG" = "ATG" ; echo "$?"
+0
+$ test "ATG" = "atg" ; echo "$?"
+1
+$ test 3 -lt 1 ; echo "$?"
+1
+$ test 3 -le 3 ; echo "$?"
+0
+```
+
+Let’s look at another basic command-line examples:
+
+```bat
+$ test -d some_directory ; echo $? # is this a directory?
+0
+$ test -f some_file.txt ; echo $? # is this a file?
+0
+$ test -r some_file.txt ; echo $? $ is this file readable?
+0
+$ test -w some_file.txt ; echo $? $ is this file writable?
+1
+```
+
+Combining test with if statements is simple; test is a command, so we could use:
+
+```shell
+if test -f some_file.txt
+then
+    [...]
+fi
+```
+
+However, Bash provides a simpler syntactic alternative to test statements: [ -f some_file.txt ]. Note the spaces around and within the brackets — these are required. This makes for much simpler if statements involving comparisons:
+
+```shell
+if [ -f some_file.txt ]
+then
+    [...]
+fi
+```
+
+When using this syntax, we can chain test expressions with -a as logical AND, -o as logical OR, ! as negation, and parentheses to group statements. As an example, suppose we want to ensure our script has enough arguments and that the input file is
+readable:
+
+```shell
+#!/bin/bash
+set -e
+set -u
+set -o pipefail
+if [ "$#" -ne 1 -o ! -r "$1" ]
+then
+    echo "usage: script.sh file_in.txt"
+    exit 1
+fi
+```
+
+### Processing Files with Bash Using for Loops and Globbing
+
+In bioinformatics, most of our data is split across multiple files (e.g., different treatments, replicates, genotypes, species, etc.). At the heart of any processing pipeline is some way to apply the same workflow to each of these files, taking care to keep track of sample names. Looping over files with Bash’s for loop is the simplest way to accomplish this. This is such an important part of bioinformatics processing pipelines that we’ll cover additional useful tools and methods in the next section of this chapter.
+
+There are three essential parts to creating a pipeline to process a set of files:
+- Selecting which files to apply the commands to
+- Looping over the data and applying the commands
+- Keeping track of the names of any output files created
+
+Suppose you have a file called samples.txt that tells
+you basic information about your raw data: sample name, read pair, and where the file is. Here’s an example:
+
+```bat
+$ cat samples.txt
+zmaysA R1 seq/zmaysA_R1.fastq
+zmaysA R2 seq/zmaysA_R2.fastq
+zmaysB R1 seq/zmaysB_R1.fastq
+zmaysB R2 seq/zmaysB_R2.fastq
+zmaysC R1 seq/zmaysC_R1.fastq
+zmaysC R2 seq/zmaysC_R2.fastq
+```
+
+With this samples.txt file, the first step of creating the pipeline is complete: all infor‐
+mation about our files to be processed, including their path, is available. The secondand third steps are to loop over this data, and do so in a way that keeps the samples straight. How we accomplish this depends on the specific task. If your command takes a single file and returns a single file, the solution is trivial: files are the unit we are processing. We simply loop over each file and use a modified version of that file’s name for the output.
+
+Let’s look at an example: suppose that we want to loop over every file, gather quality statistics on each and every file (using the imaginary program fastq_stat), and save this information to an output file. Each output file should have a name based on the input file, so if a summary file indicates something is wrong we know which file was affected. There’s a lot of little parts to this, so we’re going to step through how to do this a piece at a time learning about Bash arrays, basename, and a few other shell tricks along the way.
+
+First, we load our filenames into a Bash array, which we can then loop over. Bash arrays can be created manually using:
+
+```bat
+$ sample_names=(zmaysA zmaysB zmaysC)
+```
+
+And specific elements can be extracted with (note Bash arrays are 0-indexed):
+
+```bat
+$ echo ${sample_names[0]}
+zmaysA
+$ echo ${sample_names[2]}
+zmaysC
+```
+
+All elements are extracted with the cryptic-looking ${sample_files[@]}:
+
+```bat
+$ echo ${sample_names[@]}
+zmaysA zmaysB zmaysC
+```
+
+You can also access how many elements are in the array (and each element’s index) with the following:
+
+```bat
+$ echo ${#sample_names[@]}
+3
+$ echo ${!sample_names[@]}
+0 1 2
+```
+
+But creating Bash arrays by hand is tedious and error prone, especially because we already have our filenames in our sample.txt file. The beauty of Bash is that we can use a command substitution to
+construct Bash arrays. Because we want to loop over each file, we need to extract the third column using cut -f 3 from samples.txt. Demonstrating this in the shell:
+
+```bat
+$ sample_files=($(cut -f 3 samples.txt))
+$ echo ${sample_files[@]}
+seq/zmaysA_R1.fastq seq/zmaysA_R2.fastq seq/zmaysB_R1.fastq seq/zmaysB_R2.fastq seq/zmaysC_R1.fastq seq/zmaysC_R2.fastq
+```
+
+With our filenames in a Bash array, we’re almost ready to loop over them. The last component is to strip the path and extension from each filename, leaving us with the most basic filename we can use to create an output filename. The Unix program base
+name strips paths from filenames:
+
+```bat
+$ basename seqs/zmaysA_R1.fastq
+zmaysA_R1.fastq
+```
+
+basename can also strip a suffix (e.g., extension) provided as the second argument from a filename (or alternatively using the argument -s):
+
+```bat
+$ basename seqs/zmaysA_R1.fastq .fastq
+zmaysA_R1
+$ basename -s .fastq seqs/zmaysA_R1.fastq
+zmaysA_R1
+```
+
+Now, all the pieces are ready to construct our processing script (processing_files.sh).
+
+This script was easy to write because our processing steps took a single file as input, and created a single file as output. In this case, simply adding a suffix to each filename was enough to keep our samples straight. Aligning paired-end reads is
+a prime example: most aligners take two input FASTQ files and return one output alignment file. However, many bioinformatics pipelines combine two or more input files into a single output file.
+
+This will be clearer in an example; suppose that we use the aligner BWA and our genome reference is named zmays_AGPv3.20.fa (bwa_aligner.sh).
+
+Finally, in some cases it might be easier to directly loop over files, rather than working a file containing sample information like samples.txt. The easiest (and safest) way to do this is to use Bash’s wildcards to glob files to loop over. The syntax of this is quite easy:
+
+```shell
+#!/bin/bash
+set -e
+set -u
+set -o pipefail
+for file in *.fastq
+do
+    echo "$file: " $(bioawk -c fastx 'END {print NR}' $file)
+done
+```
+
+This simple script uses bioawk to count how many FASTQ records are in a file, for each file in the current directory ending in .fastq.
+
+### Automating File-Processing with find and xargs
+
+In this section, we’ll learn about a more powerful way to specify files matching some criteria using Unix find. We’ll also see how files printed by find can be passed to another tool called xargs to create powerful Unix-based processing workflows.
+
+#### Using find and xargs
+
+First, let’s look at some common shell problems that find and xargs solve. Suppose you have a program named process_fq that takes multiple filenames through standard in to process. If you wanted to run this program on all files with the suffix .fq, you might run:
+
+```bat
+$ ls *.fq
+treatment-01.fq treatment 02.fq treatment-03.fq
+$ ls *.fq | process_fq
+```
+
+Unfortunately, this leads to a common complication that makes ls and wildcards a fragile solution. Suppose your directory contains a filename called treatment 02.fq. In this case, ls returns treatment 02.fq along with other files. However, because files are separated by spaces, and this file contains a space, process_fq will interpret treatment 02.fq as two separate files, named treatment and 02.fq.
+
+Note that this does not occur with file globbing in arguments—if process_fq takes multiple files as arguments, your shell handles this properly:
+
+```bat
+$ process_fq *.fq
+```
+
+Here, your shell automatically escapes the space in the filename treatment 02.fq, so process_fq will correctly receive the arguments treatment-01.fq, treatment 02.fq, treatment-03.fq. So why not use this approach? Alas, there’s a limit to the number of files that can be specified as arguments. It’s not unlikely to run into this limit when processing numerous files. As an example, suppose that you have a tmp/ directory with thousands and thousands of temporary files you want to remove before rerunning a script. You might try rm tmp/*, but you’ll run into a problem:
+
+```bat
+$ rm tmp/*
+/bin/rm: cannot execute [Argument list too long]
+```
+
+The solution to both of these problems is through find and xargs, as we will see in the following sections.
+
+#### Finding Files with find
+
+Unlike ls, find is recursive. This makes find useful if your project directory is deeply nested and you wish to search the entire project for a file. In fact, running find on a directory (without other arguments) can be a quick way to see a project directory’s structure.
+
+Again, using the zmays-snps/ toy directory we created in the beginning of the course:
+
+```bat
+$ find zmays-snps
+zmays-snps
+zmays-snps/analysis
+zmays-snps/data
+zmays-snps/data/seqs
+zmays-snps/data/seqs/zmaysA_R1.fastq
+zmays-snps/data/seqs/zmaysA_R2.fastq
+zmays-snps/data/seqs/zmaysB_R1.fastq
+zmays-snps/data/seqs/zmaysB_R2.fastq
+zmays-snps/data/seqs/zmaysC_R1.fastq
+zmays-snps/data/seqs/zmaysC_R2.fastq
+zmays-snps/scripts
+```
+
+The basic syntax for find is find path expression. Here, path specifies which directory find is to search for files in (if you’re currently in this directory, it’s simply find .). The expression part of find’s syntax is where find’s real power comes in.
+Expressions are how we describe which files we want to find return. Expressions are built from predicates, which are chained together by logical AND and OR operators. find only returns files when the expression evaluates to true.
+
+To get a taste of how simple predicates work, let’s see how to use find to match files by filename using the -name predicate. Earlier we used unquoted wildcards with ls, which are expanded by the shell to all matching filenames. With find, we quote patterns (much like we did with grep) to avoid our shells from interpreting characters like \*. For example, suppose we want to find all files matching the pattern "zmaysB*fastq" to pass to a pipeline. We would use the command shown below:
+
+```bat
+$ find data/seqs -name "zmaysB*fastq"
+data/seqs/zmaysB_R1.fastq
+data/seqs/zmaysB_R2.fastq
+```
+
+This gives similar results to ls zmaysB*fastq, as we’d expect. The primary difference is that find reports results separated by newlines and, by default, find is recursive.
+
+#### find’s Expressions
+
+find’s expressions allow you to narrow down on specific files using a simple syntax.
+In the previous example, the find command would return directoriesalso matching the pattern "zmaysB*fastq". Because we only want to return FASTQ
+files (and not directories with that matching name), we might want to limit our results using the -type option:
+
+```bat
+$ find data/seqs -name "zmaysB*fastq" -type f
+data/seqs/zmaysB_R1.fastq
+data/seqs/zmaysB_R2.fastq
+```
+
+We might also want all FASTQ files from samples A or C. In this case, we’d want to chain expressions with another operator, -or.
+
+```bat
+$ find data/seqs -name "zmaysA*fastq" -or -name "zmaysC*fastq" -type f
+data/seqs/zmaysA_R1.fastq
+data/seqs/zmaysA_R2.fastq
+data/seqs/zmaysC_R1.fastq
+data/seqs/zmaysC_R2.fastq
+```
+
+Let’s see one more advanced example. Suppose that a messy collaborator decided to create a file named zmaysB_R1-temp.fastq in seqs/. You notice this file because now your find command is matching it:
+
+```bat
+$ touch seqs/zmaysB_R1-temp.fastq
+$ find seqs -type f "!" -name "zmaysC*fastq" \ seqs/zmaysB_R1-temp.fastq
+seqs/zmaysA_R1.fastq
+seqs/zmaysA_R2.fastq
+seqs/zmaysB_R1.fastq
+seqs/zmaysB_R2.fastq
+```
+
+You don’t want to delete his file or rename it, because your collaborator may need that file and/or rely on it having that specific name. So, the best way to deal with it seems to be to change your find command and talk to your collaborator about this mystery file later. Luckily, find allows this sort of advanced file querying:
+
+```bat
+$ find seqs -type f "!" -name "zmaysC*fastq" -and "!" -name "*-temp*"
+seqs/zmaysA_R1.fastq
+seqs/zmaysA_R2.fastq
+seqs/zmaysB_R1.fastq
+seqs/zmaysB_R2.fastq
+```
+
+#### find’s -exec: Running Commands on find’s Results
+
+While find is useful for locating a file, its real strength in bioinformatics is as a tool to programmatically access certain files you want to run a command on. In the previous section, we saw how find’s expressions allow you to select distinct files that match certain conditions. In this section, we’ll see how find allows you to run commands on each of the files find returns, using find’s -exec option.
+
+Let’s look at a simple example to understand how -exec works. Continuing from our last example, suppose that a messy collaborator created numerous temporary files. Let’s emulate this (in the zmays-snps/data/seqs directory):
+
+```bat
+$ touch zmays{A,C}_R{1,2}-temp.fastq
+$ ls
+zmaysA_R1-temp.fastq zmaysB_R1-temp.fastq zmaysC_R1.fastq
+zmaysA_R1.fastq zmaysB_R1.fastq zmaysC_R2-temp.fastq
+zmaysA_R2-temp.fastq zmaysB_R2.fastq zmaysC_R2.fastq
+zmaysA_R2.fastq zmaysC_R1-temp.fastq
+```
+
+Suppose your collaborator allows you to delete all of these temporary files. One way to delete these files is with rm *-temp.fastq. However, rm with a wildcard in a directory filled with important data files is too risky.
+
+find’s -exec works by passing each file that matches find’s expressions to the command specified by -exec.
+Our find and remove command is:
+
+```bat
+$ find . -name "*-temp.fastq" -exec rm -i {} \;
+remove ./zmaysA_R1-temp.fastq? y
+remove ./zmaysA_R2-temp.fastq? y
+remove ./zmaysB_R1-temp.fastq? y
+remove ./zmaysC_R1-temp.fastq? y
+remove ./zmaysC_R2-temp.fastq? y
+```
+
+In one line, we’re able to pragmatically identify and execute a command on files that match a certain pattern.
+
+#### xargs: A Unix Powertool
+
+If there were one Unix tool that introduced me to the incredible raw power of Unix, it is xargs. xargs allows us to take input passed to it from standard in, and use this input as arguments to another program, which allows us to build commands programmatically from values received through standard in. Using find with xargs is much like find with -exec, but with some added advantages that make xargs a better choice for larger bioinformatics file-processing tasks.
+
+Let’s re-create our messy temporary file directory example again (from the zmays-snps/data/seqs directory):
+
+```bat
+$ touch zmays{A,C}_R{1,2}-temp.fastq # create the test files
+```
+
+xargs works by taking input from standard in and splitting it by spaces, tabs, and newlines into arguments. Then, these arguments are passed to the command supplied. For example, to emulate the behavior of find -exec with rm, we use xargs with rm:
+
+```bat
+$ find . -name "*-temp.fastq"
+./zmaysA_R1-temp.fastq
+./zmaysA_R2-temp.fastq
+./zmaysC_R1-temp.fastq
+./zmaysC_R2-temp.fastq
+$ find . -name "*-temp.fastq" | xargs rm
+```
+
+Essentially, xargs is splitting the output from find into arguments, and running:
+
+```bat
+$ rm ./zmaysA_R1-temp.fastq ./zmaysA_R2-temp.fastq \
+./zmaysC_R1-temp.fastq ./zmaysC_R2-temp.fastq
+```
+
+xargs passes all arguments received through standard in to the supplied program (rm in this example). This works well for programs like rm, touch, mkdir, and others that take multiple arguments. However, other programs only take a single argument at a time. We can set how many arguments are passed to each command call with xargs’s -n argument. For example, we could call rm four separate times (each on one file) with:
+
+```bat
+$ find . -name "*-temp.fastq" | xargs -n 1 rm
+```
+
+One big benefit of xargs is that it separates the process that specifies the files to operate on (find) from applying a command to these files (through xargs). If we wanted to inspect a long list of files find returns before running rm on all files in this list, we could use:
+
+```bat
+$ find . -name "*-temp.fastq" > files-to-delete.txt
+$ cat files-to-delete.txt
+./zmaysA_R1-temp.fastq
+./zmaysA_R2-temp.fastq
+./zmaysC_R1-temp.fastq
+./zmaysC_R2-temp.fastq
+$ cat files-to-delete.txt | xargs rm
+```
+
+#### xargs and Parallelization
+
+An incredibly powerful feature of xargs is that it can launch a limited number of processes in parallel. I emphasize limited number, because this is one of xargs’s strengths over Bash’s for loops. We could launch numerous multiple background processes with Bash for loops, which on a system with multiple processors would run in parallel (depending on other running tasks):
+
+```shell
+for filename in *.fastq; do
+    program "$filename" &
+done
+```
+
+But this launches however many background processes there are files in *.fastq! This is certainly not good computing etiquette on a shared server, and even if you were the only user of this server, this might lead to bottlenecks as all processes start
+reading from and writing to the disk. Consequently, when running multiple process in parallel, we want to explicitly limit how many processes run simultaneously. xargs allows us to do this with the option -P \<num>\ where \<num>\ is the number of processes to run simultaneously.
+
+Let’s look at a simple example—running our imaginary program fastq_stat in parallel, using at most six processes. We accomplish this by adding -P 6 to our second xargs call:
+
+```bat
+$ find . -name "*.fastq" | xargs basename -s ".fastq" | \
+xargs -P 6 -I{} fastq_stat --in {}.fastq --out ../summaries/{}.txt
+```
+
+Generally, fastq_stat could be any program or even a shell script that performs many tasks per sample. The key point is that we provide all information the program or script needs to run through the sample name, which is what replaces the string {}.
+
+Admittedly, the price of some powerful xargs workflows is complexity. If you find yourself using xargs mostly to parallelize tasks or you’re writing complicated xargs commands that use basename, it may be worthwhile to learn GNU Parallel.
+
+GNU Parallel has numerous other options and features. If you find yourself using xargs frequently for complicated workflows, I’d recommend learning more about GNU Parallel.
+
+### Make and Makefiles: Another Option for Pipelines
+
+Although this chapter has predominantly focused on building pipelines from Bash, and using find and xargs to apply commands to certain files, I can’t neglect to quickly introduce another very powerful tool used to create bioinformatics pipelines. This tool is Make, which interprets makefiles (written in their own makefile language). Make was intended to compile software, which is a complex process as each
+step that compiles a file needs to ensure every dependency is already compiled or available. Rather, makefiles are constructed as a set of rules, where each rule has three parts: the target, the prerequisites, and the recipe. Each recipe is a set of commands used to build a target, which is a file. The prerequisites specify which files the recipe needs to build the target file (the dependencies). 
+Let’s look at a simple example — we want to write a simple pipeline that downloads a file from
+the Internet and creates a summary of it:
+
+We run makefiles using the command make. For the preceding makefile, we’d run it using make all, where the all argument specifies that make should start with the all target. Then, the program make will first search for a file named Makefile in the current directory, load it, and start at the target all. This would look like the following:
+
+```bat
+$ make all
+curl -L http://bit.ly/egfr_flank > egfr_flank.fa
+% Total % Received % Xferd Average Speed Time Time Time Current
+Dload Upload Total Spent Left Speed
+100 190 100 190 0 0 566 0 --:--:-- --:--:-- --:--:-- 567
+100 1215 100 1215 0 0 529 0 0:00:02 0:00:02 --:--:-- 713
+seqtk comp egfr_flank.fa > egfr_comp.txt
+```
+
+An especially powerful feature of make is that it only generates targets when they don’t exist or when their prerequisites have been modified. This is very powerful: if you have a long and complex makefile, and you modified one file, make will only rerun the
+recipes for the targets that depend on this modified file.
+
+Because all targets have been created and no input files have been modified, there’s nothing to do. Now,look what happens if we use touch to change the modification time of the egfr_flank.fa file:
+
+```bat
+$ touch egfr_flank.fa
+$ make all
+seqtk comp egfr_flank.fa > egfr_comp.txt
+```
+
+Because egfr_flank.fa is a prerequisite to create the egfr_comp.txt file, make reruns this rule to update egfr_comp.txt using the newest version of egfr_flank.txt.
+
+Finally, we can remove all files created with our clean target:
+
+```bat
+$ make clean
+rm -f egfr_comp.txt egfr_flank.fa
+```
+
+## Conclusion
+
+### Recommendations for Further Reading
+
+#### Statistics and Probability
+
+- Introduction to Probability by Blitzstein and Hwang. If you don't know any probability theory, this is the book I'd start with. In fact if you don't know any probability theory and you've just finished by book, this is the next book I'd recommend you read.
+
+- All of Statistics by Wasserman. A mathy book statistical inference, but very good (and concise).
+
+- An Introduction to Statistical Learning: with Applications in R by James et al. and it's book, The Elements of Statistical Learning by Hastie et al.. The latter book is quite dense, but is good. The former book is much more practical and highly recommended. The authors of ESLII provide a free PDF copy on their website.
+
+- Machine Learning: A Probabilistic Perspective by Murphy is one of my favorite books. Even though it's angled at machine learning, it's a good general book on modern applied probability and is directly useful for bioinformatics.
+
+#### Computer Science
+
+- Algorithms in a Nutshell by Heineman et al.. A great starter book on the subject.
+
+- An Introduction to Algorithms, Cormen et al.. A dense reference textbook, but one I keep on my shelf.
+
+- Algorithms with C Great if you're interested in getting started with C in bioinformatics.
+
+#### Bioinformatics Algorithms
+
+- Bioinformatics Algorithms by Phillip Compeau and Pavel Pevzner looks to be an absolutely stellar book (seriously, one of the best on the subject I've seen... ever). I'd say this is a terrific next book after Bioinformatics Data Skills.
