@@ -1,0 +1,13 @@
+Bancos de dados biológicos
+
+- PDB
+- ZINC
+- UniProt
+- NCBI
+    - GenBank
+    - SRA
+    - PubMed
+    - FTP
+- Pfam
+
+

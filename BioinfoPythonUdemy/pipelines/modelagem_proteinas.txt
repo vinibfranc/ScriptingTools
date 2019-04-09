@@ -1,0 +1,25 @@
+Modelagem de proteínas
+
+- Modelagem de nvo (ab initio)
+    -Rosetta
+
+- Modelagem por homologia
+    - Modeller
+
+- Processo para modelagem por homologia
+
+    - Entradas: sequência do alvo, sequência do template e estrutura tridimensinal do template
+    - Saída: estrutura 3D
+
+- MODELLER
+
+    - Técnica de restrições espaciais
+        - Conservação de distâncias
+        - Resíduos correspondentes
+    
+- Passos para modelagem por homologia
+
+    1) Identificação do template (BLAST, PDB)
+    2) Alinhamento (Clustal-W)
+    3) Modelagem por homologia (MODELLER)
+    4) Avaliação do modelo (DOPE score, Ramachandran)

@@ -1,0 +1,5 @@
+1. Escreva um programa que defina o melhor template para uma sequência (Dicas: use BLAST; baixe os dados de sequência e estrutura no PDB).
+2. Escreva um programa que faça o alinhamento entre duas sequêncais (Dica: use o clustal).
+3. Faça a um programa que construa 100 modelos para uma proteína (Dica: use o MODELLER).
+4. Faça um programa que calcule qual o melhor modelo (Dica: leia a função DOPE).
+5. Automatize todos os programas criados até o momento em um único pipeline.

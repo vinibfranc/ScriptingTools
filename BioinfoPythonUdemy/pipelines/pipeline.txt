@@ -1,0 +1,15 @@
+Pipelines
+
+- Programa principal que controla execução de outros programas
+- Processa entrada e saída de dados
+- Manipulação de formatos
+
+Por que usar?
+
+- Não precisa reinventar a roda
+- Automatização de processos (execução em larga escala)
+
+Exemplos
+
+- Montagem de genomas
+- Montagem de proteínas
